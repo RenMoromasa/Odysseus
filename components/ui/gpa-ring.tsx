@@ -1,3 +1,16 @@
+<<<<<<< HEAD
+import { AppColors, FontSizes } from '@/constants/theme';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import React, { useEffect } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withTiming,
+} from 'react-native-reanimated';
+=======
 import React, { useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Animated, {
@@ -5,6 +18,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { AppColors, FontSizes, Spacing } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+>>>>>>> e954a3a74699615b4dec0e7bb63dcc6f62efa860
 
 interface GPARingProps {
   gpa: number;
@@ -14,7 +28,11 @@ interface GPARingProps {
   label?: string;
 }
 
+<<<<<<< HEAD
+export function GPARing({ gpa, maxGPA = 5.0, size = 150, strokeWidth = 10, label = 'Current GPA' }: GPARingProps) {
+=======
 export function GPARing({ gpa, maxGPA = 4.0, size = 150, strokeWidth = 10, label = 'Current GPA' }: GPARingProps) {
+>>>>>>> e954a3a74699615b4dec0e7bb63dcc6f62efa860
   const scheme = useColorScheme() ?? 'dark';
   const colors = AppColors[scheme];
   const progress = Math.min(gpa / maxGPA, 1);
@@ -41,11 +59,19 @@ export function GPARing({ gpa, maxGPA = 4.0, size = 150, strokeWidth = 10, label
     return { transform: [{ rotate: `${deg}deg` }] };
   });
 
+<<<<<<< HEAD
+const getGPAColor = () => {
+    if (gpa <= 1.50) return colors.success;
+    if (gpa <= 2.00) return colors.accent;
+    if (gpa <= 2.50) return colors.secondary;
+    if (gpa <= 3.00) return colors.warning;
+=======
   const getGPAColor = () => {
     if (gpa >= 3.5) return colors.success;
     if (gpa >= 3.0) return colors.accent;
     if (gpa >= 2.5) return colors.secondary;
     if (gpa >= 2.0) return colors.warning;
+>>>>>>> e954a3a74699615b4dec0e7bb63dcc6f62efa860
     return colors.danger;
   };
 

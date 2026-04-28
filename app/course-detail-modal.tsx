@@ -1,3 +1,20 @@
+<<<<<<< HEAD
+import { TagBadge } from '@/components/ui/tag-badge';
+import { AppColors, FontSizes, Radii, Spacing } from '@/constants/theme';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useStudentPlan } from '@/hooks/use-student-plan';
+import { Ionicons } from '@expo/vector-icons';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useState } from 'react';
+import {
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View
+} from 'react-native';
+=======
 import React, { useState, useMemo } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Pressable,
@@ -9,6 +26,7 @@ import { useStudentPlan } from '@/hooks/use-student-plan';
 import { AppColors, Spacing, FontSizes, Radii } from '@/constants/theme';
 import { TagBadge } from '@/components/ui/tag-badge';
 import { GRADE_OPTIONS, GRADE_POINTS } from '@/constants/types';
+>>>>>>> e954a3a74699615b4dec0e7bb63dcc6f62efa860
 
 export default function CourseDetailModal() {
   const { courseId } = useLocalSearchParams<{ courseId: string }>();
@@ -23,8 +41,13 @@ export default function CourseDetailModal() {
   const course = getCourse(courseId ?? '');
   const grade = getCourseGrade(courseId ?? '');
   const semester = getCourseSemester(courseId ?? '');
+<<<<<<< HEAD
+  const [gradeInput, setGradeInput] = useState<string>(grade ?? '');
+  const [gradeError, setGradeError] = useState<string>('');
+=======
   const [selectedGrade, setSelectedGrade] = useState<string | undefined>(grade);
   const [showGradeSelector, setShowGradeSelector] = useState(false);
+>>>>>>> e954a3a74699615b4dec0e7bb63dcc6f62efa860
 
   if (!course) {
     return (
@@ -37,11 +60,25 @@ export default function CourseDetailModal() {
   const tag = getTagById(course.tags[0]);
   const conflicts = semester ? checkPrerequisiteConflicts(semester.id, course.id) : [];
 
+<<<<<<< HEAD
+  const handleSetGrade = () => {
+    if (!semester) return;
+    const num = parseFloat(gradeInput);
+    if (isNaN(num) || num < 1.0 || num > 5.0) {
+      setGradeError('Enter a grade between 1.00 and 5.00');
+      return;
+    }
+    const formatted = num.toFixed(2);
+    setGradeInput(formatted);
+    setGradeError('');
+    dispatch({ type: 'SET_GRADE', semesterId: semester.id, courseId: course.id, grade: formatted });
+=======
   const handleSetGrade = (g: string) => {
     if (!semester) return;
     setSelectedGrade(g);
     dispatch({ type: 'SET_GRADE', semesterId: semester.id, courseId: course.id, grade: g });
     setShowGradeSelector(false);
+>>>>>>> e954a3a74699615b4dec0e7bb63dcc6f62efa860
   };
 
   const handleRemoveCourse = () => {
@@ -50,6 +87,15 @@ export default function CourseDetailModal() {
     router.back();
   };
 
+<<<<<<< HEAD
+  const handleClearGrade = () => {
+    if (!semester) return;
+    setGradeInput('');
+    setGradeError('');
+    dispatch({ type: 'CLEAR_GRADE', semesterId: semester.id, courseId: course.id });
+  };
+=======
+>>>>>>> e954a3a74699615b4dec0e7bb63dcc6f62efa860
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
@@ -140,6 +186,48 @@ export default function CourseDetailModal() {
           </View>
         )}
 
+<<<<<<< HEAD
+      {/* Grade Input */}
+        {semester && (
+          <View style={styles.section}>
+            <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>Grade</Text>
+            <View style={styles.gradeRow}>
+              <TextInput
+                style={[styles.gradeInput, {
+                  backgroundColor: colors.surface,
+                  borderColor: gradeError ? colors.danger : colors.border,
+                  color: colors.text,
+                }]}
+                value={gradeInput}
+                onChangeText={(text) => { setGradeInput(text); setGradeError(''); }}
+                onSubmitEditing={handleSetGrade}
+                placeholder="e.g. 1.75"
+                placeholderTextColor={colors.textMuted}
+                keyboardType="decimal-pad"
+                returnKeyType="done"
+              />
+              <Pressable
+                style={[styles.gradeSaveBtn, { backgroundColor: colors.accent }]}
+                onPress={handleSetGrade}
+              >
+                <Text style={styles.gradeSaveBtnText}>Save</Text>
+              </Pressable>
+              {gradeInput !== '' && (
+                <Pressable
+                  style={[styles.gradeClearBtn, { backgroundColor: colors.dangerSoft }]}
+                  onPress={handleClearGrade}
+                >
+                  <Ionicons name="close" size={18} color={colors.danger} />
+                </Pressable>
+              )}
+            </View>
+            {gradeError !== '' && (
+              <Text style={[styles.gradeErrorText, { color: colors.danger }]}>{gradeError}</Text>
+            )}
+            <Text style={[styles.gradeHint, { color: colors.textMuted }]}>
+              1.00 = Highest · 3.00 = Passing · 5.00 = Failed
+            </Text>
+=======
         {/* Grade Selector */}
         {semester && (
           <View style={styles.section}>
@@ -178,6 +266,7 @@ export default function CourseDetailModal() {
                 ))}
               </View>
             )}
+>>>>>>> e954a3a74699615b4dec0e7bb63dcc6f62efa860
           </View>
         )}
 
@@ -296,4 +385,25 @@ const styles = StyleSheet.create({
     gap: Spacing.sm, padding: Spacing.md, borderRadius: Radii.md,
   },
   addBtnText: { fontSize: FontSizes.md, fontWeight: '600', color: '#FFF' },
+<<<<<<< HEAD
+  gradeRow: {
+    flexDirection: 'row', alignItems: 'center', gap: Spacing.sm,
+  },
+  gradeInput: {
+    flex: 1, padding: Spacing.md, borderRadius: Radii.md,
+    borderWidth: 1, fontSize: FontSizes.lg, fontWeight: '700',
+  },
+  gradeSaveBtn: {
+    paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md,
+    borderRadius: Radii.md,
+  },
+  gradeSaveBtnText: { color: '#FFF', fontWeight: '700', fontSize: FontSizes.md },
+  gradeClearBtn: {
+    width: 40, height: 40, borderRadius: Radii.md,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  gradeErrorText: { fontSize: FontSizes.xs, marginTop: Spacing.xs },
+  gradeHint: { fontSize: FontSizes.xs, marginTop: Spacing.xs },
+=======
+>>>>>>> e954a3a74699615b4dec0e7bb63dcc6f62efa860
 });
