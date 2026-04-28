@@ -1,9 +1,21 @@
+<<<<<<< HEAD
+import { COURSE_CATALOG, DEFAULT_TAGS, INITIAL_STATE } from '@/constants/mock-data';
+import {
+  Course,
+  Semester,
+  StudentPlanAction,
+  StudentPlanState,
+  Tag
+} from '@/constants/types';
+import React, { createContext, useCallback, useContext, useMemo, useReducer } from 'react';
+=======
 import React, { createContext, useContext, useReducer, useCallback, useMemo } from 'react';
 import { COURSE_CATALOG, DEFAULT_TAGS, INITIAL_STATE } from '@/constants/mock-data';
 import {
   StudentPlanState, StudentPlanAction, Course, Tag, Semester,
   GRADE_POINTS, SemesterCourse,
 } from '@/constants/types';
+>>>>>>> e954a3a74699615b4dec0e7bb63dcc6f62efa860
 
 // ─── Reducer ────────────────────────────────────────────────────────────────────
 function studentPlanReducer(state: StudentPlanState, action: StudentPlanAction): StudentPlanState {
@@ -137,7 +149,11 @@ export function StudentPlanProvider({ children }: { children: React.ReactNode })
 
   const isCourseCompleted = useCallback((courseId: string) => {
     return state.semesters.some(
+<<<<<<< HEAD
+      sem => sem.status === 'completed' && sem.courses.some(c => c.courseId === courseId && c.grade && c.grade !== '5.00')
+=======
       sem => sem.status === 'completed' && sem.courses.some(c => c.courseId === courseId && c.grade)
+>>>>>>> e954a3a74699615b4dec0e7bb63dcc6f62efa860
     );
   }, [state.semesters]);
 
@@ -164,10 +180,21 @@ export function StudentPlanProvider({ children }: { children: React.ReactNode })
         const course = COURSE_CATALOG.find(c => c.id === sc.courseId);
         if (!course) continue;
         allCredits += course.credits;
+<<<<<<< HEAD
+        const gradeNum = sc.grade ? parseFloat(sc.grade) : NaN;
+        if (sc.grade && !isNaN(gradeNum)) {
+          totalPoints += gradeNum * course.credits;
+          totalCredits += course.credits;
+          // Only count as completed if not failed (5.00)
+          if (sc.grade !== '5.00') {
+            completedCredits += course.credits;
+          }
+=======
         if (sc.grade && GRADE_POINTS[sc.grade] !== undefined) {
           totalPoints += GRADE_POINTS[sc.grade] * course.credits;
           totalCredits += course.credits;
           completedCredits += course.credits;
+>>>>>>> e954a3a74699615b4dec0e7bb63dcc6f62efa860
         }
       }
     }
@@ -187,8 +214,14 @@ export function StudentPlanProvider({ children }: { children: React.ReactNode })
     let credits = 0;
     for (const sc of sem.courses) {
       const course = COURSE_CATALOG.find(c => c.id === sc.courseId);
+<<<<<<< HEAD
+      const gradeNum = sc.grade ? parseFloat(sc.grade) : NaN;
+      if (!course || !sc.grade || isNaN(gradeNum)) continue;
+      points += gradeNum * course.credits;
+=======
       if (!course || !sc.grade || GRADE_POINTS[sc.grade] === undefined) continue;
       points += GRADE_POINTS[sc.grade] * course.credits;
+>>>>>>> e954a3a74699615b4dec0e7bb63dcc6f62efa860
       credits += course.credits;
     }
     return credits > 0 ? points / credits : 0;
@@ -222,8 +255,14 @@ export function StudentPlanProvider({ children }: { children: React.ReactNode })
         const course = COURSE_CATALOG.find(c => c.id === sc.courseId);
         if (!course) continue;
         const grade = hypotheticalGrades[sc.courseId] || sc.grade;
+<<<<<<< HEAD
+        const gradeNum = grade ? parseFloat(grade) : NaN;
+        if (grade && !isNaN(gradeNum)) {
+          totalPoints += gradeNum * course.credits;
+=======
         if (grade && GRADE_POINTS[grade] !== undefined) {
           totalPoints += GRADE_POINTS[grade] * course.credits;
+>>>>>>> e954a3a74699615b4dec0e7bb63dcc6f62efa860
           totalCredits += course.credits;
         }
       }

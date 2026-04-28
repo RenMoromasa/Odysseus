@@ -17,7 +17,11 @@ export interface Tag {
 
 export interface SemesterCourse {
   courseId: string;
+<<<<<<< HEAD
+  grade?: string; // e.g. '1.00', '1.75', '3.00', '5.00'
+=======
   grade?: string; // e.g. 'A', 'B+', 'C', etc.
+>>>>>>> e954a3a74699615b4dec0e7bb63dcc6f62efa860
 }
 
 export type SemesterStatus = 'completed' | 'in-progress' | 'planned';
@@ -46,6 +50,21 @@ export interface StudentPlanState {
 }
 
 export const GRADE_POINTS: Record<string, number> = {
+<<<<<<< HEAD
+  '1.00': 1.00,
+  '1.25': 1.25,
+  '1.50': 1.50,
+  '1.75': 1.75,
+  '2.00': 2.00,
+  '2.25': 2.25,
+  '2.50': 2.50,
+  '2.75': 2.75,
+  '3.00': 3.00,
+  '5.00': 5.00,
+};
+
+export const GRADE_OPTIONS = ['1.00', '1.25', '1.50', '1.75', '2.00', '2.25', '2.50', '2.75', '3.00', '5.00'];
+=======
   'A': 4.0,
   'A-': 3.7,
   'B+': 3.3,
@@ -60,6 +79,7 @@ export const GRADE_POINTS: Record<string, number> = {
 };
 
 export const GRADE_OPTIONS = ['A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'D+', 'D', 'F'];
+>>>>>>> e954a3a74699615b4dec0e7bb63dcc6f62efa860
 
 export type StudentPlanAction =
   | { type: 'ADD_COURSE_TO_SEMESTER'; semesterId: string; courseId: string }
