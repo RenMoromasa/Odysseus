@@ -54,7 +54,7 @@ export default function DashboardScreen() {
         <View style={styles.header}>
           <View>
             <Text style={[styles.greeting, { color: colors.textSecondary }]}>
-              Good {getTimeOfDay()} 👋
+              Good {getTimeOfDay()},
             </Text>
             <Text style={[styles.name, { color: colors.text }]}>
               {state.studentInfo.name}
@@ -128,7 +128,7 @@ export default function DashboardScreen() {
         {conflicts.length > 0 && (
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>
-              ⚠️ Prerequisite Alerts
+              Prerequisite Alerts
             </Text>
             {conflicts.slice(0, 3).map((conflict) => {
               const course = getCourse(conflict.courseId);

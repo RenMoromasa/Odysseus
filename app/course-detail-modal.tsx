@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import { TagBadge } from '@/components/ui/tag-badge';
 import { AppColors, FontSizes, Radii, Spacing } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -14,19 +13,6 @@ import {
   TextInput,
   View
 } from 'react-native';
-=======
-import React, { useState, useMemo } from 'react';
-import {
-  View, Text, StyleSheet, ScrollView, Pressable,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { useRouter, useLocalSearchParams } from 'expo-router';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { useStudentPlan } from '@/hooks/use-student-plan';
-import { AppColors, Spacing, FontSizes, Radii } from '@/constants/theme';
-import { TagBadge } from '@/components/ui/tag-badge';
-import { GRADE_OPTIONS, GRADE_POINTS } from '@/constants/types';
->>>>>>> e954a3a74699615b4dec0e7bb63dcc6f62efa860
 
 export default function CourseDetailModal() {
   const { courseId } = useLocalSearchParams<{ courseId: string }>();
@@ -41,13 +27,8 @@ export default function CourseDetailModal() {
   const course = getCourse(courseId ?? '');
   const grade = getCourseGrade(courseId ?? '');
   const semester = getCourseSemester(courseId ?? '');
-<<<<<<< HEAD
   const [gradeInput, setGradeInput] = useState<string>(grade ?? '');
   const [gradeError, setGradeError] = useState<string>('');
-=======
-  const [selectedGrade, setSelectedGrade] = useState<string | undefined>(grade);
-  const [showGradeSelector, setShowGradeSelector] = useState(false);
->>>>>>> e954a3a74699615b4dec0e7bb63dcc6f62efa860
 
   if (!course) {
     return (
@@ -60,7 +41,6 @@ export default function CourseDetailModal() {
   const tag = getTagById(course.tags[0]);
   const conflicts = semester ? checkPrerequisiteConflicts(semester.id, course.id) : [];
 
-<<<<<<< HEAD
   const handleSetGrade = () => {
     if (!semester) return;
     const num = parseFloat(gradeInput);
@@ -72,13 +52,6 @@ export default function CourseDetailModal() {
     setGradeInput(formatted);
     setGradeError('');
     dispatch({ type: 'SET_GRADE', semesterId: semester.id, courseId: course.id, grade: formatted });
-=======
-  const handleSetGrade = (g: string) => {
-    if (!semester) return;
-    setSelectedGrade(g);
-    dispatch({ type: 'SET_GRADE', semesterId: semester.id, courseId: course.id, grade: g });
-    setShowGradeSelector(false);
->>>>>>> e954a3a74699615b4dec0e7bb63dcc6f62efa860
   };
 
   const handleRemoveCourse = () => {
@@ -87,15 +60,12 @@ export default function CourseDetailModal() {
     router.back();
   };
 
-<<<<<<< HEAD
   const handleClearGrade = () => {
     if (!semester) return;
     setGradeInput('');
     setGradeError('');
     dispatch({ type: 'CLEAR_GRADE', semesterId: semester.id, courseId: course.id });
   };
-=======
->>>>>>> e954a3a74699615b4dec0e7bb63dcc6f62efa860
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
@@ -186,7 +156,6 @@ export default function CourseDetailModal() {
           </View>
         )}
 
-<<<<<<< HEAD
       {/* Grade Input */}
         {semester && (
           <View style={styles.section}>
@@ -227,46 +196,6 @@ export default function CourseDetailModal() {
             <Text style={[styles.gradeHint, { color: colors.textMuted }]}>
               1.00 = Highest · 3.00 = Passing · 5.00 = Failed
             </Text>
-=======
-        {/* Grade Selector */}
-        {semester && (
-          <View style={styles.section}>
-            <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>Grade</Text>
-            <Pressable
-              style={[styles.gradeBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
-              onPress={() => setShowGradeSelector(!showGradeSelector)}
-            >
-              <Text style={[styles.gradeBtnText, { color: selectedGrade ? colors.text : colors.textMuted }]}>
-                {selectedGrade ?? 'Set Grade'}
-              </Text>
-              <Ionicons name={showGradeSelector ? 'chevron-up' : 'chevron-down'} size={18} color={colors.textMuted} />
-            </Pressable>
-
-            {showGradeSelector && (
-              <View style={[styles.gradeGrid]}>
-                {GRADE_OPTIONS.map(g => (
-                  <Pressable
-                    key={g}
-                    style={[
-                      styles.gradeOption,
-                      {
-                        backgroundColor: selectedGrade === g ? colors.accent : colors.surfaceLight,
-                        borderColor: selectedGrade === g ? colors.accent : colors.border,
-                      },
-                    ]}
-                    onPress={() => handleSetGrade(g)}
-                  >
-                    <Text style={[styles.gradeOptionText, {
-                      color: selectedGrade === g ? '#FFF' : colors.text,
-                    }]}>{g}</Text>
-                    <Text style={[styles.gradeOptionPts, {
-                      color: selectedGrade === g ? 'rgba(255,255,255,0.7)' : colors.textMuted,
-                    }]}>{GRADE_POINTS[g].toFixed(1)}</Text>
-                  </Pressable>
-                ))}
-              </View>
-            )}
->>>>>>> e954a3a74699615b4dec0e7bb63dcc6f62efa860
           </View>
         )}
 
@@ -385,7 +314,6 @@ const styles = StyleSheet.create({
     gap: Spacing.sm, padding: Spacing.md, borderRadius: Radii.md,
   },
   addBtnText: { fontSize: FontSizes.md, fontWeight: '600', color: '#FFF' },
-<<<<<<< HEAD
   gradeRow: {
     flexDirection: 'row', alignItems: 'center', gap: Spacing.sm,
   },
@@ -404,6 +332,4 @@ const styles = StyleSheet.create({
   },
   gradeErrorText: { fontSize: FontSizes.xs, marginTop: Spacing.xs },
   gradeHint: { fontSize: FontSizes.xs, marginTop: Spacing.xs },
-=======
->>>>>>> e954a3a74699615b4dec0e7bb63dcc6f62efa860
 });

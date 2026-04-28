@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import { useEffect, useState } from 'react';
 import { useColorScheme as useSystemColorScheme } from 'react-native';
 
@@ -33,6 +32,3 @@ export function useColorScheme(): 'light' | 'dark' {
   }
   return _themeMode;
 }
-=======
-export { useColorScheme } from 'react-native';
->>>>>>> e954a3a74699615b4dec0e7bb63dcc6f62efa860

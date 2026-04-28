@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import { GlassCard } from '@/components/ui/glass-card';
 import { AppColors, FontSizes, Radii, Spacing } from '@/constants/theme';
 import { getThemeMode, setThemeMode, useColorScheme } from '@/hooks/use-color-scheme';
@@ -15,18 +14,6 @@ import {
   Text,
   View
 } from 'react-native';
-=======
-import React, { useState } from 'react';
-import {
-  View, Text, StyleSheet, ScrollView, Pressable, Switch, StatusBar, Alert,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { useStudentPlan } from '@/hooks/use-student-plan';
-import { AppColors, Spacing, FontSizes, Radii } from '@/constants/theme';
-import { GlassCard } from '@/components/ui/glass-card';
->>>>>>> e954a3a74699615b4dec0e7bb63dcc6f62efa860
 
 export default function ProfileScreen() {
   const scheme = useColorScheme() ?? 'dark';
@@ -41,7 +28,6 @@ export default function ProfileScreen() {
     ? Math.round((gpaData.completedCredits / gpaData.totalCredits) * 100)
     : 0;
 
-<<<<<<< HEAD
 const [themeMode, setThemeModeState] = useState(getThemeMode());
 
   const cycleTheme = () => {
@@ -55,8 +41,6 @@ const [themeMode, setThemeModeState] = useState(getThemeMode());
   const themeLabel = themeMode === 'system' ? 'System' : themeMode === 'dark' ? 'Dark' : 'Light';
 
 
-=======
->>>>>>> e954a3a74699615b4dec0e7bb63dcc6f62efa860
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar barStyle={scheme === 'dark' ? 'light-content' : 'dark-content'} />
@@ -133,7 +117,6 @@ const [themeMode, setThemeModeState] = useState(getThemeMode());
           </GlassCard>
         </View>
 
-<<<<<<< HEAD
       {/* Settings */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Settings</Text>
@@ -142,21 +125,12 @@ const [themeMode, setThemeModeState] = useState(getThemeMode());
               style={[styles.settingItem, { borderBottomColor: colors.border }]}
               onPress={cycleTheme}
             >
-=======
-        {/* Settings */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Settings</Text>
-
-          <GlassCard noPadding>
-            <View style={[styles.settingItem, { borderBottomColor: colors.border }]}>
->>>>>>> e954a3a74699615b4dec0e7bb63dcc6f62efa860
               <View style={styles.settingLeft}>
                 <View style={[styles.settingIcon, { backgroundColor: colors.accentSoft }]}>
                   <Ionicons name="moon" size={18} color={colors.accent} />
                 </View>
                 <Text style={[styles.settingLabel, { color: colors.text }]}>Dark Mode</Text>
               </View>
-<<<<<<< HEAD
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <Text style={[styles.settingHint, { color: colors.textMuted }]}>
                   {themeLabel}
@@ -164,12 +138,6 @@ const [themeMode, setThemeModeState] = useState(getThemeMode());
                 <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
               </View>
             </Pressable>
-=======
-              <Text style={[styles.settingHint, { color: colors.textMuted }]}>
-                Follows system
-              </Text>
-            </View>
->>>>>>> e954a3a74699615b4dec0e7bb63dcc6f62efa860
 
             <Pressable
               style={[styles.settingItem, { borderBottomColor: colors.border }]}

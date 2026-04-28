@@ -8,7 +8,7 @@ import { StudentPlanProvider } from '@/hooks/use-student-plan';
 import { AppColors } from '@/constants/theme';
 
 export const unstable_settings = {
-  anchor: '(tabs)',
+  initialRouteName: 'welcome',
 };
 
 export default function RootLayout() {
@@ -50,6 +50,22 @@ export default function RootLayout() {
             contentStyle: { backgroundColor: colors.background },
           }}
         >
+          <Stack.Screen
+            name="welcome"
+            options={{ headerShown: false, animation: 'fade' }}
+          />
+          <Stack.Screen
+            name="login"
+            options={{ headerShown: false, animation: 'slide_from_right' }}
+          />
+          <Stack.Screen
+            name="register"
+            options={{ headerShown: false, animation: 'slide_from_right' }}
+          />
+          <Stack.Screen
+            name="forgot-password"
+            options={{ headerShown: false, animation: 'slide_from_right' }}
+          />
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen
             name="course-detail-modal"
