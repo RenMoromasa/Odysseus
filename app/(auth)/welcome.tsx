@@ -24,7 +24,7 @@ export default function WelcomeScreen() {
       {/* ── Top: Gradient Background with Logo ─────────────────────────── */}
       <View style={styles.topSection}>
         <LinearGradient
-          colors={['#B8A9E8', '#C9B4EE', '#DFC8F0', '#EDD8F0', '#F5E4F2', '#FAF0F7']}
+          colors={['#059669', '#10B981', '#34D399', '#6EE7B7', '#FDE68A', '#FEF3C7']}
           locations={[0, 0.2, 0.4, 0.6, 0.8, 1]}
           style={StyleSheet.absoluteFill}
         />
@@ -33,15 +33,8 @@ export default function WelcomeScreen() {
         <View style={styles.decorCircle1} />
         <View style={styles.decorCircle2} />
         <View style={styles.decorCircle3} />
+        
 
-        {/* App Logo */}
-        <View style={styles.logoContainer}>
-          <Image
-            source={require('@/assets/images/logo.png')}
-            style={styles.logo}
-            contentFit="contain"
-          />
-        </View>
       </View>
 
       {/* ── Bottom: White Card with Actions ────────────────────────────── */}
@@ -62,7 +55,7 @@ export default function WelcomeScreen() {
           ]}
         >
           <LinearGradient
-            colors={['#A78BFA', '#9B72E8', '#8B5CF6']}
+            colors={['#57f3baff', '#57e2b4ff', '#8cf1abff']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             style={styles.createBtnGradient}
@@ -97,7 +90,7 @@ export default function WelcomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FAF0F7',
+    backgroundColor: '#FEF3C7',
   },
 
   // ── Top Section ──
@@ -130,7 +123,7 @@ const styles = StyleSheet.create({
     width: 180,
     height: 180,
     borderRadius: 90,
-    backgroundColor: 'rgba(167, 139, 250, 0.08)',
+    backgroundColor: 'rgba(16, 185, 129, 0.08)',
     bottom: 20,
     left: 40,
   },
@@ -156,7 +149,7 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.lg,
     alignItems: 'center',
     // Subtle shadow for depth
-    shadowColor: '#8B5CF6',
+    shadowColor: '#10B981',
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.08,
     shadowRadius: 20,
@@ -209,7 +202,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: Radii.xl,
     borderWidth: 1.5,
-    borderColor: '#D4C8EE',
+    borderColor: '#A7F3D0',
     backgroundColor: '#FDFCFF',
     marginBottom: Spacing.lg,
   },
@@ -230,7 +223,7 @@ const styles = StyleSheet.create({
   },
   bottomLinkAction: {
     fontSize: FontSizes.sm,
-    color: '#8B5CF6',
+    color: '#10B981',
     fontWeight: '600',
     textDecorationLine: 'underline',
   },

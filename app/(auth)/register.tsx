@@ -147,14 +147,7 @@ export default function RegisterScreen() {
               <Ionicons name="arrow-back" size={24} color="rgba(255,255,255,0.8)" />
             </Pressable>
 
-            {/* App Logo */}
-            <View style={styles.logoContainer}>
-              <Image
-                source={require('@/assets/images/logo.png')}
-                style={styles.logo}
-                contentFit="contain"
-              />
-            </View>
+
           </View>
 
           {/* ── Bottom: White Card with Register Form ──────────────── */}

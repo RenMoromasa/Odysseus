@@ -17,12 +17,12 @@ export const AppColors = {
     textSecondary: '#8B95B5',
     textMuted: '#5A6485',
 
-    accent: '#7C6AFF',
-    accentLight: '#9D8FFF',
-    accentSoft: 'rgba(124, 106, 255, 0.15)',
+    accent: '#10B981',
+    accentLight: '#34D399',
+    accentSoft: 'rgba(16, 185, 129, 0.15)',
 
-    secondary: '#4ECDC4',
-    secondarySoft: 'rgba(78, 205, 196, 0.15)',
+    secondary: '#B45309',
+    secondarySoft: 'rgba(180, 83, 9, 0.15)',
 
     success: '#5CDB95',
     successSoft: 'rgba(92, 219, 149, 0.15)',
@@ -50,12 +50,12 @@ export const AppColors = {
     textSecondary: '#5A6078',
     textMuted: '#8E93A8',
 
-    accent: '#6C5CE7',
-    accentLight: '#8B7FF0',
-    accentSoft: 'rgba(108, 92, 231, 0.10)',
+    accent: '#059669',
+    accentLight: '#10B981',
+    accentSoft: 'rgba(5, 150, 105, 0.10)',
 
-    secondary: '#00B4A0',
-    secondarySoft: 'rgba(0, 180, 160, 0.10)',
+    secondary: '#92400E',
+    secondarySoft: 'rgba(146, 64, 14, 0.10)',
 
     success: '#2ECC71',
     successSoft: 'rgba(46, 204, 113, 0.10)',
@@ -75,14 +75,14 @@ export const AppColors = {
 };
 
 export const TagColors: Record<string, string> = {
-  coreMajor: '#7C6AFF',
-  freeElective: '#F472B6',
-  minor: '#38BDF8',
-  profElective: '#A78BFA',
-  genEd: '#4ECDC4',
-  laboratory: '#FB923C',
-  thesis: '#FFD166',
-  peNstp: '#94A3B8',
+  coreMajor: '#10B981',
+  freeElective: '#D97706',
+  minor: '#059669',
+  profElective: '#92400E',
+  genEd: '#34D399',
+  laboratory: '#B45309',
+  thesis: '#F59E0B',
+  peNstp: '#78716C',
 };
 
 export const Spacing = {
@@ -113,8 +113,8 @@ export const FontSizes = {
 };
 
 // Keep legacy exports for compatibility with existing components
-const tintColorLight = '#6C5CE7';
-const tintColorDark = '#7C6AFF';
+const tintColorLight = '#059669';
+const tintColorDark = '#10B981';
 
 export const Colors = {
   light: {
