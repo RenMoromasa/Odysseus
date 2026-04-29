@@ -2,18 +2,22 @@ import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, Pressable, StatusBar,
   TextInput, KeyboardAvoidingView, Platform, ScrollView,
+  ActivityIndicator,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Spacing, FontSizes, Radii } from '@/constants/theme';
+import { useAuth } from '@/hooks/use-auth';
 
 const PROGRAMS = [
   'BS - Information Technology',
   'BS - Information Systems',
   'BS - Computer Science',
 ];
+
+const YEAR_LEVELS = [1, 2, 3, 4];
 
 type FormErrors = {
   firstName?: string;
@@ -23,10 +27,12 @@ type FormErrors = {
   password?: string;
   confirmPassword?: string;
   program?: string;
+  yearLevel?: string;
 };
 
 export default function RegisterScreen() {
   const router = useRouter();
+  const { register } = useAuth();
 
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -37,14 +43,17 @@ export default function RegisterScreen() {
   const [selectedProgram, setSelectedProgram] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [selectedYearLevel, setSelectedYearLevel] = useState(0);
   const [showProgramPicker, setShowProgramPicker] = useState(false);
-  const [errors, setErrors] = useState<FormErrors>({});
+  const [showYearPicker, setShowYearPicker] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState<FormErrors & { general?: string }>({});
 
   const clearError = (field: keyof FormErrors) => {
     setErrors(prev => ({ ...prev, [field]: undefined }));
   };
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
     const newErrors: FormErrors = {};
 
     if (!firstName.trim()) newErrors.firstName = 'First name is required';
@@ -75,6 +84,7 @@ export default function RegisterScreen() {
     }
 
     if (!selectedProgram) newErrors.program = 'Please select a program';
+    if (!selectedYearLevel) newErrors.yearLevel = 'Please select your year level';
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -82,7 +92,23 @@ export default function RegisterScreen() {
     }
 
     setErrors({});
-    router.replace('/(tabs)');
+    setIsLoading(true);
+    try {
+      await register({
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        email: email.trim(),
+        idNumber: idNumber.trim(),
+        password,
+        program: selectedProgram,
+        yearLevel: selectedYearLevel,
+      });
+      router.replace('/(tabs)');
+    } catch (err: any) {
+      setErrors({ general: err.message });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -137,6 +163,13 @@ export default function RegisterScreen() {
             <Text style={styles.subtitle}>
               Fill in your details to get started with Odysseus.
             </Text>
+            {/* General Error */}
+            {errors.general && (
+              <View style={styles.generalError}>
+                <Ionicons name="alert-circle" size={16} color="#F87171" />
+                <Text style={styles.generalErrorText}>{errors.general}</Text>
+              </View>
+            )}
 
             {/* ── Name Row ── */}
             <View style={styles.nameRow}>
@@ -265,6 +298,58 @@ export default function RegisterScreen() {
               )}
             </View>
 
+            {/* ── Year Level Picker ── */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Year Level</Text>
+              <Pressable
+                style={[styles.inputWrap, errors.yearLevel && styles.inputError]}
+                onPress={() => setShowYearPicker(!showYearPicker)}
+              >
+                <Ionicons name="layers-outline" size={16} color="#8E93A8" style={styles.inputIcon} />
+                <Text style={[
+                  styles.pickerText,
+                  !selectedYearLevel && { color: '#C4C8D8' },
+                ]}>
+                  {selectedYearLevel ? `Year ${selectedYearLevel}` : 'Select your year level'}
+                </Text>
+                <Ionicons
+                  name={showYearPicker ? 'chevron-up' : 'chevron-down'}
+                  size={18}
+                  color="#8E93A8"
+                />
+              </Pressable>
+              {errors.yearLevel && <Text style={styles.errorText}>{errors.yearLevel}</Text>}
+
+              {showYearPicker && (
+                <View style={styles.pickerDropdown}>
+                  {YEAR_LEVELS.map(year => (
+                    <Pressable
+                      key={year}
+                      style={[
+                        styles.pickerOption,
+                        selectedYearLevel === year && styles.pickerOptionSelected,
+                      ]}
+                      onPress={() => {
+                        setSelectedYearLevel(year);
+                        setShowYearPicker(false);
+                        clearError('yearLevel');
+                      }}
+                    >
+                      <Text style={[
+                        styles.pickerOptionText,
+                        selectedYearLevel === year && styles.pickerOptionTextSelected,
+                      ]}>
+                        {year === 1 ? '1st Year' : year === 2 ? '2nd Year' : year === 3 ? '3rd Year' : '4th Year'}
+                      </Text>
+                      {selectedYearLevel === year && (
+                        <Ionicons name="checkmark" size={18} color="#D4874D" />
+                      )}
+                    </Pressable>
+                  ))}
+                </View>
+              )}
+            </View>
+
             {/* ── Password ── */}
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>Password</Text>
@@ -313,9 +398,11 @@ export default function RegisterScreen() {
             {/* ── Register Button ── */}
             <Pressable
               onPress={handleRegister}
+              disabled={isLoading}
               style={({ pressed }) => [
                 styles.registerBtnWrap,
                 pressed && { opacity: 0.9, transform: [{ scale: 0.98 }] },
+                isLoading && { opacity: 0.7 },
               ]}
             >
               <LinearGradient
@@ -324,14 +411,18 @@ export default function RegisterScreen() {
                 end={{ x: 1, y: 0 }}
                 style={styles.registerBtnGradient}
               >
-                <Text style={styles.registerBtnText}>Register</Text>
+                {isLoading ? (
+                  <ActivityIndicator color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.registerBtnText}>Register</Text>
+                )}
               </LinearGradient>
             </Pressable>
 
             {/* ── Already have an account ── */}
             <View style={styles.bottomLink}>
               <Text style={styles.bottomLinkText}>Already have an account? </Text>
-              <Pressable onPress={() => router.push('/login')}>
+              <Pressable onPress={() => router.push('/(auth)/login')}>
                 <Text style={styles.bottomLinkAction}>Log In</Text>
               </Pressable>
             </View>
@@ -436,6 +527,22 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.md + Spacing.xs,
   },
 
+  // ── General Error ──
+  generalError: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEF2F2',
+    borderRadius: Radii.md,
+    padding: Spacing.md,
+    marginBottom: Spacing.md,
+    gap: 8,
+  },
+  generalErrorText: {
+    flex: 1,
+    fontSize: FontSizes.sm,
+    color: '#F87171',
+    fontWeight: '500',
+  },
   // ── Inputs ──
   nameRow: {
     flexDirection: 'row',

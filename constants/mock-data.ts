@@ -337,6 +337,529 @@ export const CS_COURSE_CATALOG: Course[] = [
   },
 ];
 
+// ─── BS Information Systems — IS-Specific Courses ─────────────────────────────
+// Source: University of San Carlos BS IS Prospectus, Effective Year 2023
+
+const IS_SPECIFIC_COURSES: Course[] = [
+  {
+    id: 'IS3204', code: 'IS 3204', name: 'Accounting for IS',
+    description: 'Fundamentals of accounting principles and their application in information systems.',
+    credits: 3, prerequisites: ['CIS1102N'], tags: ['coreMajor'],
+  },
+  {
+    id: 'IS3103', code: 'IS 3103', name: 'Application Development and Emerging Technologies',
+    description: 'Application development using emerging technologies and modern development practices.',
+    credits: 3, prerequisites: ['CIS1104', 'CIS1204'], tags: ['coreMajor'],
+  },
+  {
+    id: 'IS4103', code: 'IS 4103', name: 'Evaluation of Business Performance',
+    description: 'Methods and tools for evaluating organizational and business performance using IS.',
+    credits: 3, prerequisites: ['CIS1204'], tags: ['coreMajor'],
+  },
+  {
+    id: 'IS3101N', code: 'IS 3101N', name: 'Introduction to Information Science',
+    description: 'Foundations of information science, information organization, retrieval, and dissemination.',
+    credits: 3, prerequisites: [], tags: ['coreMajor'],
+  },
+  {
+    id: 'IS3102', code: 'IS 3102', name: 'Financial Management',
+    description: 'Financial planning, analysis, and management concepts for IS professionals.',
+    credits: 3, prerequisites: ['IS3204'], tags: ['coreMajor'],
+  },
+  {
+    id: 'IS3106', code: 'IS 3106', name: 'IS Project Management',
+    description: 'Project management methodologies, tools, and techniques for IS projects.',
+    credits: 3, prerequisites: ['CIS2201'], tags: ['coreMajor'],
+  },
+  {
+    id: 'IS4104N', code: 'IS 4104N', name: 'Fundamentals of Information Systems',
+    description: 'Core concepts of information systems, their role in organizations, and strategic value.',
+    credits: 3, prerequisites: [], tags: ['coreMajor'],
+  },
+  {
+    id: 'ISELEC', code: 'IS ELEC', name: 'IS Elective',
+    description: 'Elective course from the IS specialization track.',
+    credits: 3, prerequisites: [], tags: ['profElective'],
+  },
+  {
+    id: 'IS3105', code: 'IS 3105', name: 'Enterprise Architecture',
+    description: 'Design and management of enterprise-level IT architectures and infrastructure.',
+    credits: 3, prerequisites: [], tags: ['coreMajor'],
+  },
+  {
+    id: 'IS3107', code: 'IS 3107', name: 'Organization and Management Concepts',
+    description: 'Organizational theory, management principles, and their application in IS contexts.',
+    credits: 3, prerequisites: [], tags: ['coreMajor'],
+  },
+  {
+    id: 'IS3201', code: 'IS 3201', name: 'Capstone 1',
+    description: 'First phase of the IS capstone: proposal, requirements gathering, and system design.',
+    credits: 3, prerequisites: ['IS3103', 'IS3106'], tags: ['thesis'],
+  },
+  {
+    id: 'IS3104', code: 'IS 3104', name: 'Collection Management of Information Resources',
+    description: 'Strategies for managing, organizing, and preserving information resources.',
+    credits: 3, prerequisites: [], tags: ['coreMajor'],
+  },
+  {
+    id: 'IS3205', code: 'IS 3205', name: 'Quantitative Methods',
+    description: 'Statistical and quantitative techniques for decision-making in IS.',
+    credits: 3, prerequisites: [], tags: ['coreMajor'],
+  },
+  {
+    id: 'IS3206', code: 'IS 3206', name: 'IS Strategy Management and Acquisition',
+    description: 'Strategic planning for IS acquisition, implementation, and management.',
+    credits: 3, prerequisites: [], tags: ['coreMajor'],
+  },
+  {
+    id: 'IS4101', code: 'IS 4101', name: 'Capstone 2',
+    description: 'Second phase: full implementation, testing, documentation, and defense of the capstone project.',
+    credits: 3, prerequisites: ['IS3201'], tags: ['thesis'],
+  },
+  {
+    id: 'IS4102', code: 'IS 4102', name: 'Practicum A',
+    description: 'Industry immersion and practical application of IS skills in a professional setting.',
+    credits: 3, prerequisites: [], tags: ['coreMajor'],
+  },
+  {
+    id: 'ISFREELEC', code: 'IS FREE ELEC', name: 'IS Free Elective',
+    description: 'Free elective course for IS students from IT or CS tracks.',
+    credits: 3, prerequisites: [], tags: ['profElective'],
+  },
+  {
+    id: 'IS3203', code: 'IS 3203', name: 'Information Resources and Services',
+    description: 'Management and delivery of information resources and reference services.',
+    credits: 3, prerequisites: ['IS3104'], tags: ['coreMajor'],
+  },
+  {
+    id: 'IS3207N', code: 'IS 3207N', name: 'Professional Issues',
+    description: 'Ethical, legal, and professional issues in information systems practice.',
+    credits: 3, prerequisites: [], tags: ['coreMajor'],
+  },
+  {
+    id: 'IS4201', code: 'IS 4201', name: 'Seminars and Tours',
+    description: 'Industry seminars, company visits, and exposure to current trends in IS.',
+    credits: 3, prerequisites: [], tags: ['coreMajor'],
+  },
+  {
+    id: 'IS4202', code: 'IS 4202', name: 'Practicum B',
+    description: 'Extended industry immersion building on Practicum A experience.',
+    credits: 6, prerequisites: ['IS4102'], tags: ['coreMajor'],
+  },
+  // IS-specific versions of shared courses with different prerequisites
+  {
+    id: 'CIS2205', code: 'CIS 2205', name: 'Design Project',
+    description: 'Collaborative design project applying systems analysis, design, and implementation skills.',
+    credits: 3, prerequisites: ['CIS2103', 'CIS2102'], tags: ['coreMajor'],
+  },
+  {
+    id: 'CIS2206N', code: 'CIS 2206N', name: 'Programming NC IV',
+    description: 'Advanced programming certification-aligned course.',
+    credits: 1, prerequisites: [], tags: ['coreMajor'],
+  },
+];
+
+// Course IDs shared between CS and IS
+const IS_SHARED_IDS = [
+  'CIS1101', 'CIS1102N', 'CIS1103', 'CIS1104',
+  'CIS1201', 'CIS1202', 'CIS1203', 'CIS1204', 'CIS1205',
+  'CIS2101', 'CIS2102', 'CIS2103', 'CIS2104', 'CIS2105', 'CIS2106N',
+  'CIS2201', 'CIS2202', 'CIS2203N', 'CIS2204',
+  'EDM1', 'EDM2',
+  'GEMMW', 'GEPC', 'GEUTS', 'GEETHICS', 'GELWR', 'GEART', 'GETCW', 'GERPH', 'GESTS',
+  'GEFREELEC1', 'GEFREELEC2', 'GEFREELEC3',
+  'NSTP1', 'NSTP2',
+  'TPE1101', 'TPE1202', 'TPE2103', 'TPE2204',
+];
+
+export const IS_COURSE_CATALOG: Course[] = [
+  ...CS_COURSE_CATALOG.filter(c => IS_SHARED_IDS.includes(c.id)),
+  ...IS_SPECIFIC_COURSES,
+];
+
+// ─── BS IS Semester Plan ──────────────────────────────────────────────────────
+export const IS_SEMESTERS: Semester[] = [
+  {
+    id: 'y1s1', label: '1st Year — 1st Semester', shortLabel: 'Y1 S1',
+    year: 1, term: 1, status: 'planned',
+    courses: [
+      { courseId: 'CIS1101' },
+      { courseId: 'CIS1102N' },
+      { courseId: 'CIS1103' },
+      { courseId: 'CIS1104' },
+      { courseId: 'EDM1' },
+      { courseId: 'GEMMW' },
+      { courseId: 'GEPC' },
+      { courseId: 'GEUTS' },
+      { courseId: 'NSTP1' },
+      { courseId: 'TPE1101' },
+    ],
+  },
+  {
+    id: 'y1s2', label: '1st Year — 2nd Semester', shortLabel: 'Y1 S2',
+    year: 1, term: 2, status: 'planned',
+    courses: [
+      { courseId: 'CIS1201' },
+      { courseId: 'CIS1202' },
+      { courseId: 'CIS1204' },
+      { courseId: 'CIS1205' },
+      { courseId: 'CIS2106N' },
+      { courseId: 'EDM2' },
+      { courseId: 'GEFREELEC1' },
+      { courseId: 'IS3204' },
+      { courseId: 'NSTP2' },
+      { courseId: 'TPE1202' },
+    ],
+  },
+  {
+    id: 'y1sum', label: '1st Year — Summer', shortLabel: 'Y1 Sum',
+    year: 1, term: 3, status: 'planned',
+    courses: [
+      { courseId: 'CIS2104' },
+      { courseId: 'CIS2201' },
+      { courseId: 'CIS2202' },
+    ],
+  },
+  {
+    id: 'y2s1', label: '2nd Year — 1st Semester', shortLabel: 'Y2 S1',
+    year: 2, term: 1, status: 'planned',
+    courses: [
+      { courseId: 'CIS2101' },
+      { courseId: 'CIS2102' },
+      { courseId: 'CIS2103' },
+      { courseId: 'CIS2105' },
+      { courseId: 'GEETHICS' },
+      { courseId: 'GEFREELEC2' },
+      { courseId: 'IS3103' },
+      { courseId: 'IS4103' },
+      { courseId: 'TPE2103' },
+    ],
+  },
+  {
+    id: 'y2s2', label: '2nd Year — 2nd Semester', shortLabel: 'Y2 S2',
+    year: 2, term: 2, status: 'planned',
+    courses: [
+      { courseId: 'CIS2203N' },
+      { courseId: 'CIS2205' },
+      { courseId: 'GEFREELEC3' },
+      { courseId: 'GELWR' },
+      { courseId: 'IS3101N' },
+      { courseId: 'IS3102' },
+      { courseId: 'IS3106' },
+      { courseId: 'IS4104N' },
+      { courseId: 'ISELEC' },
+      { courseId: 'TPE2204' },
+    ],
+  },
+  {
+    id: 'y2sum', label: '2nd Year — Summer', shortLabel: 'Y2 Sum',
+    year: 2, term: 3, status: 'planned',
+    courses: [
+      { courseId: 'IS3105' },
+      { courseId: 'IS3107' },
+      { courseId: 'IS3201' },
+    ],
+  },
+  {
+    id: 'y3s1', label: '3rd Year — 1st Semester', shortLabel: 'Y3 S1',
+    year: 3, term: 1, status: 'planned',
+    courses: [
+      { courseId: 'GEART' },
+      { courseId: 'GETCW' },
+      { courseId: 'IS3104' },
+      { courseId: 'IS3205' },
+      { courseId: 'IS3206' },
+      { courseId: 'IS4101' },
+      { courseId: 'IS4102' },
+      { courseId: 'ISFREELEC' },
+    ],
+  },
+  {
+    id: 'y3s2', label: '3rd Year — 2nd Semester', shortLabel: 'Y3 S2',
+    year: 3, term: 2, status: 'planned',
+    courses: [
+      { courseId: 'CIS1203' },
+      { courseId: 'CIS2204' },
+      { courseId: 'CIS2206N' },
+      { courseId: 'GERPH' },
+      { courseId: 'GESTS' },
+      { courseId: 'IS3203' },
+      { courseId: 'IS3207N' },
+      { courseId: 'IS4201' },
+      { courseId: 'IS4202' },
+    ],
+  },
+];
+
+// ─── BS Information Technology — IT-Specific Courses ──────────────────────────
+// Source: University of San Carlos BS IT Prospectus, Effective Year 2023
+
+const IT_SPECIFIC_COURSES: Course[] = [
+  {
+    id: 'IT3106', code: 'IT 3106', name: 'Accounting for IT',
+    description: 'Fundamentals of accounting principles and their application in information technology.',
+    credits: 3, prerequisites: ['CIS1102N'], tags: ['coreMajor'],
+  },
+  {
+    id: 'IT3101N', code: 'IT 3101N', name: 'Platform Technologies',
+    description: 'Study of various computing platforms, cloud services, and deployment environments.',
+    credits: 3, prerequisites: ['CIS1202'], tags: ['coreMajor'],
+  },
+  {
+    id: 'IT3107', code: 'IT 3107', name: 'Fundamentals of Data Warehousing and Data Mining',
+    description: 'Data warehousing concepts, ETL processes, and data mining techniques for decision support.',
+    credits: 3, prerequisites: ['CIS2104'], tags: ['coreMajor'],
+  },
+  {
+    id: 'IT4104', code: 'IT 4104', name: 'Linux Operating System',
+    description: 'Linux system administration, shell scripting, and server management.',
+    credits: 3, prerequisites: ['CIS1205'], tags: ['coreMajor'],
+  },
+  {
+    id: 'IT3102N', code: 'IT 3102N', name: 'Probability and Statistics',
+    description: 'Probability theory, statistical methods, and their applications in IT.',
+    credits: 3, prerequisites: ['CIS1103'], tags: ['coreMajor'],
+  },
+  {
+    id: 'IT3103A', code: 'IT 3103A', name: 'Systems Integration and Architecture',
+    description: 'Enterprise system integration patterns, middleware, APIs, and distributed architectures.',
+    credits: 3, prerequisites: ['CIS1205', 'CIS2104'], tags: ['coreMajor'],
+  },
+  {
+    id: 'IT3202N', code: 'IT 3202N', name: 'Software Quality Assurance',
+    description: 'Software testing methodologies, QA processes, and quality metrics.',
+    credits: 3, prerequisites: ['CIS2101', 'CIS2104'], tags: ['coreMajor'],
+  },
+  {
+    id: 'ITELEC', code: 'IT ELEC', name: 'IT Elective',
+    description: 'Elective course from the IT specialization track.',
+    credits: 3, prerequisites: [], tags: ['profElective'],
+  },
+  {
+    id: 'ITFREEEL', code: 'IT FREE EL', name: 'IT Free Elective',
+    description: 'Free elective course for IT students from IS or CS tracks.',
+    credits: 3, prerequisites: [], tags: ['profElective'],
+  },
+  {
+    id: 'IT3104N', code: 'IT 3104N', name: 'Information Assurance and Security',
+    description: 'Cybersecurity fundamentals, cryptography, network security, and risk management.',
+    credits: 3, prerequisites: ['CIS1205'], tags: ['coreMajor'],
+  },
+  {
+    id: 'IT3201N', code: 'IT 3201N', name: 'Capstone Project I',
+    description: 'First phase of the IT capstone: proposal, requirements gathering, and system design.',
+    credits: 3, prerequisites: ['IT3202N', 'IT3103A'], tags: ['thesis'],
+  },
+  {
+    id: 'IT3204N', code: 'IT 3204N', name: 'Research Methods in Computing',
+    description: 'Research methodologies, academic writing, and literature review for computing research.',
+    credits: 3, prerequisites: ['CIS2201'], tags: ['coreMajor'],
+  },
+  {
+    id: 'IT3105N', code: 'IT 3105N', name: 'Application Development and Emerging Technologies',
+    description: 'Application development using emerging technologies and modern development practices.',
+    credits: 3, prerequisites: ['CIS2203N'], tags: ['coreMajor'],
+  },
+  {
+    id: 'IT3203N', code: 'IT 3203N', name: 'Quantitative Methods',
+    description: 'Statistical and quantitative techniques for decision-making in IT.',
+    credits: 3, prerequisites: ['IT3204N'], tags: ['coreMajor'],
+  },
+  {
+    id: 'IT3206N', code: 'IT 3206N', name: 'Integrative Programming and Technology',
+    description: 'Integration of multiple programming paradigms and technologies in complex systems.',
+    credits: 3, prerequisites: ['CIS2101'], tags: ['coreMajor'],
+  },
+  {
+    id: 'IT4102N', code: 'IT 4102N', name: 'Practicum 1',
+    description: 'Industry immersion and practical application of IT skills in a professional setting.',
+    credits: 3, prerequisites: ['CIS2101', 'CIS2104', 'IT3101N', 'IT3103A'], tags: ['coreMajor'],
+  },
+  {
+    id: 'IT4201', code: 'IT 4201', name: 'Systems Administration and Maintenance',
+    description: 'Server administration, system maintenance, and infrastructure management.',
+    credits: 3, prerequisites: ['IT3101N', 'CIS2105'], tags: ['coreMajor'],
+  },
+  {
+    id: 'ITELEC2', code: 'IT ELEC 2', name: 'IT Elective 2',
+    description: 'Second elective course from the IT specialization track.',
+    credits: 3, prerequisites: [], tags: ['profElective'],
+  },
+  {
+    id: 'ITFREEEL2', code: 'IT FREE EL 2', name: 'IT Free Elective 2',
+    description: 'Second free elective course for IT students from IS or CS tracks.',
+    credits: 3, prerequisites: [], tags: ['profElective'],
+  },
+  {
+    id: 'IT3205', code: 'IT 3205', name: 'Social and Professional Issues',
+    description: 'Ethical, legal, and social issues in information technology. Professional responsibilities.',
+    credits: 3, prerequisites: [], tags: ['coreMajor'],
+  },
+  {
+    id: 'IT4101', code: 'IT 4101', name: 'Capstone Project II',
+    description: 'Second phase: full implementation, testing, documentation, and defense of the capstone.',
+    credits: 3, prerequisites: ['IT3203N', 'IT3201N'], tags: ['thesis'],
+  },
+  {
+    id: 'IT4103', code: 'IT 4103', name: 'Seminars and Tours',
+    description: 'Industry seminars, company visits, and exposure to current trends in IT.',
+    credits: 3, prerequisites: [], tags: ['coreMajor'],
+  },
+  {
+    id: 'IT4202N', code: 'IT 4202N', name: 'Practicum 2',
+    description: 'Extended industry immersion building on Practicum 1 experience.',
+    credits: 6, prerequisites: ['IT4102N'], tags: ['coreMajor'],
+  },
+  {
+    id: 'ITELEC3', code: 'IT ELEC 3', name: 'IT Elective 3',
+    description: 'Third elective course from the IT specialization track.',
+    credits: 3, prerequisites: [], tags: ['profElective'],
+  },
+  // IT-specific versions of shared courses with different prerequisites
+  {
+    id: 'CIS2204', code: 'CIS 2204', name: 'Technopreneurship',
+    description: 'Entrepreneurship in technology: business planning, innovation, and startup fundamentals.',
+    credits: 3, prerequisites: [], tags: ['coreMajor'],
+  },
+  {
+    id: 'CIS2206N', code: 'CIS 2206N', name: 'Programming NC IV',
+    description: 'Advanced programming certification-aligned course.',
+    credits: 1, prerequisites: [], tags: ['coreMajor'],
+  },
+];
+
+// Course IDs shared between CS and IT
+const IT_SHARED_IDS = [
+  'CIS1101', 'CIS1102N', 'CIS1103', 'CIS1104',
+  'CIS1201', 'CIS1202', 'CIS1204', 'CIS1205',
+  'CIS2101', 'CIS2103', 'CIS2104', 'CIS2105', 'CIS2106N',
+  'CIS2201', 'CIS2202', 'CIS2203N',
+  'EDM1', 'EDM2',
+  'GEMMW', 'GEPC', 'GEUTS', 'GEETHICS', 'GELWR', 'GEART', 'GETCW', 'GERPH', 'GESTS',
+  'GEFREELEC1', 'GEFREELEC2', 'GEFREELEC3',
+  'NSTP1', 'NSTP2',
+  'TPE1101', 'TPE1202', 'TPE2103', 'TPE2204',
+];
+
+export const IT_COURSE_CATALOG: Course[] = [
+  ...CS_COURSE_CATALOG.filter(c => IT_SHARED_IDS.includes(c.id)),
+  ...IT_SPECIFIC_COURSES,
+];
+
+// ─── BS IT Semester Plan ──────────────────────────────────────────────────────
+export const IT_SEMESTERS: Semester[] = [
+  {
+    id: 'y1s1', label: '1st Year — 1st Semester', shortLabel: 'Y1 S1',
+    year: 1, term: 1, status: 'planned',
+    courses: [
+      { courseId: 'CIS1101' },
+      { courseId: 'CIS1102N' },
+      { courseId: 'CIS1103' },
+      { courseId: 'CIS1104' },
+      { courseId: 'EDM1' },
+      { courseId: 'GEMMW' },
+      { courseId: 'GEPC' },
+      { courseId: 'GEUTS' },
+      { courseId: 'NSTP1' },
+      { courseId: 'TPE1101' },
+    ],
+  },
+  {
+    id: 'y1s2', label: '1st Year — 2nd Semester', shortLabel: 'Y1 S2',
+    year: 1, term: 2, status: 'planned',
+    courses: [
+      { courseId: 'CIS1201' },
+      { courseId: 'CIS1202' },
+      { courseId: 'CIS1204' },
+      { courseId: 'CIS1205' },
+      { courseId: 'CIS2106N' },
+      { courseId: 'EDM2' },
+      { courseId: 'GEFREELEC1' },
+      { courseId: 'IT3106' },
+      { courseId: 'NSTP2' },
+      { courseId: 'TPE1202' },
+    ],
+  },
+  {
+    id: 'y1sum', label: '1st Year — Summer', shortLabel: 'Y1 Sum',
+    year: 1, term: 3, status: 'planned',
+    courses: [
+      { courseId: 'CIS2104' },
+      { courseId: 'CIS2201' },
+      { courseId: 'CIS2202' },
+    ],
+  },
+  {
+    id: 'y2s1', label: '2nd Year — 1st Semester', shortLabel: 'Y2 S1',
+    year: 2, term: 1, status: 'planned',
+    courses: [
+      { courseId: 'CIS2101' },
+      { courseId: 'CIS2103' },
+      { courseId: 'CIS2105' },
+      { courseId: 'GEETHICS' },
+      { courseId: 'GEFREELEC2' },
+      { courseId: 'IT3101N' },
+      { courseId: 'IT3107' },
+      { courseId: 'IT4104' },
+      { courseId: 'TPE2103' },
+    ],
+  },
+  {
+    id: 'y2s2', label: '2nd Year — 2nd Semester', shortLabel: 'Y2 S2',
+    year: 2, term: 2, status: 'planned',
+    courses: [
+      { courseId: 'CIS2203N' },
+      { courseId: 'GEFREELEC3' },
+      { courseId: 'GELWR' },
+      { courseId: 'IT3102N' },
+      { courseId: 'IT3103A' },
+      { courseId: 'IT3202N' },
+      { courseId: 'ITELEC' },
+      { courseId: 'ITFREEEL' },
+      { courseId: 'TPE2204' },
+    ],
+  },
+  {
+    id: 'y2sum', label: '2nd Year — Summer', shortLabel: 'Y2 Sum',
+    year: 2, term: 3, status: 'planned',
+    courses: [
+      { courseId: 'IT3104N' },
+      { courseId: 'IT3201N' },
+      { courseId: 'IT3204N' },
+    ],
+  },
+  {
+    id: 'y3s1', label: '3rd Year — 1st Semester', shortLabel: 'Y3 S1',
+    year: 3, term: 1, status: 'planned',
+    courses: [
+      { courseId: 'GEART' },
+      { courseId: 'GETCW' },
+      { courseId: 'IT3105N' },
+      { courseId: 'IT3203N' },
+      { courseId: 'IT3206N' },
+      { courseId: 'IT4102N' },
+      { courseId: 'IT4201' },
+      { courseId: 'ITELEC2' },
+      { courseId: 'ITFREEEL2' },
+    ],
+  },
+  {
+    id: 'y3s2', label: '3rd Year — 2nd Semester', shortLabel: 'Y3 S2',
+    year: 3, term: 2, status: 'planned',
+    courses: [
+      { courseId: 'CIS2204' },
+      { courseId: 'CIS2206N' },
+      { courseId: 'GERPH' },
+      { courseId: 'GESTS' },
+      { courseId: 'IT3205' },
+      { courseId: 'IT4101' },
+      { courseId: 'IT4103' },
+      { courseId: 'IT4202N' },
+      { courseId: 'ITELEC3' },
+    ],
+  },
+];
+
 // ─── BS CS Semester Plan ───────────────────────────────────────────────────────
 export const CS_SEMESTERS: Semester[] = [
   {
@@ -450,17 +973,17 @@ export const CS_SEMESTERS: Semester[] = [
   },
 ];
 
-// ─── Program Catalogs (add IT and IS here later) ──────────────────────────────
+// ─── Program Catalogs ────────────────────────────────────────────────────────
 export const PROGRAM_CATALOGS: Record<string, Course[]> = {
   'BS Computer Science': CS_COURSE_CATALOG,
-  // 'BS Information Technology': IT_COURSE_CATALOG,
-  // 'BS Information Systems': IS_COURSE_CATALOG,
+  'BS Information Systems': IS_COURSE_CATALOG,
+  'BS Information Technology': IT_COURSE_CATALOG,
 };
 
 export const PROGRAM_SEMESTERS: Record<string, Semester[]> = {
   'BS Computer Science': CS_SEMESTERS,
-  // 'BS Information Technology': IT_SEMESTERS,
-  // 'BS Information Systems': IS_SEMESTERS,
+  'BS Information Systems': IS_SEMESTERS,
+  'BS Information Technology': IT_SEMESTERS,
 };
 
 // ─── Active catalog (currently CS, will switch based on user program) ─────────

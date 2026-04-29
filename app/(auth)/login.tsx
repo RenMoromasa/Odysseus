@@ -1,10 +1,12 @@
 import { FontSizes, Radii, Spacing } from '@/constants/theme';
+import { useAuth } from '@/hooks/use-auth';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
+  ActivityIndicator,
   Dimensions,
   KeyboardAvoidingView, Platform,
   Pressable,
@@ -18,16 +20,18 @@ import {
 const { width } = Dimensions.get('window');
 export default function LoginScreen() {
   const router = useRouter();
-  const [idNumber, setIdNumber] = useState('');
+  const { login } = useAuth();
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [errors, setErrors] = useState<{ id?: string; password?: string }>({});
-  const handleLogin = () => {
-    const newErrors: { id?: string; password?: string } = {};
-    if (!idNumber.trim()) {
-      newErrors.id = 'ID number is required';
-    } else if (!/^\d{6,10}$/.test(idNumber.trim())) {
-      newErrors.id = 'Format: eg. 21100000';
+  const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState<{ email?: string; password?: string; general?: string }>({});
+  const handleLogin = async () => {
+    const newErrors: { email?: string; password?: string } = {};
+    if (!email.trim()) {
+      newErrors.email = 'Email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      newErrors.email = 'Enter a valid email address';
     }
     if (!password.trim()) {
       newErrors.password = 'Password is required';
@@ -37,7 +41,15 @@ export default function LoginScreen() {
       return;
     }
     setErrors({});
-    router.replace('/(tabs)');
+    setIsLoading(true);
+    try {
+      await login(email.trim(), password);
+      router.replace('/(tabs)');
+    } catch (err: any) {
+      setErrors({ general: err.message });
+    } finally {
+      setIsLoading(false);
+    }
   };
   return (
     <View style={styles.container}>
@@ -85,27 +97,34 @@ export default function LoginScreen() {
             <Text style={styles.subtitle}>
               Welcome back! Enter your credentials to continue.
             </Text>
-            {/* ID Number Input */}
+            {/* General Error */}
+            {errors.general && (
+              <View style={styles.generalError}>
+                <Ionicons name="alert-circle" size={16} color="#F87171" />
+                <Text style={styles.generalErrorText}>{errors.general}</Text>
+              </View>
+            )}
+            {/* Email Input */}
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>ID Number</Text>
+              <Text style={styles.inputLabel}>School Email</Text>
               <View style={[
                 styles.inputWrap,
-                errors.id ? styles.inputError : null,
+                errors.email ? styles.inputError : null,
               ]}>
-                <Ionicons name="card-outline" size={18} color="#8E93A8" style={styles.inputIcon} />
+                <Ionicons name="mail-outline" size={18} color="#8E93A8" style={styles.inputIcon} />
                 <TextInput
                   style={styles.input}
-                  value={idNumber}
-                  onChangeText={(t) => { setIdNumber(t); setErrors(e => ({ ...e, id: undefined })); }}
-                  placeholder="ID Number"
+                  value={email}
+                  onChangeText={(t) => { setEmail(t); setErrors(e => ({ ...e, email: undefined, general: undefined })); }}
+                  placeholder="School Email"
                   placeholderTextColor="#C4C8D8"
-                  keyboardType="default"
+                  keyboardType="email-address"
                   autoCapitalize="none"
                   returnKeyType="next"
                 />
               </View>
-              {errors.id && (
-                <Text style={styles.errorText}>{errors.id}</Text>
+              {errors.email && (
+                <Text style={styles.errorText}>{errors.email}</Text>
               )}
             </View>
             {/* Password Input */}
@@ -119,7 +138,7 @@ export default function LoginScreen() {
                 <TextInput
                   style={styles.input}
                   value={password}
-                  onChangeText={(t) => { setPassword(t); setErrors(e => ({ ...e, password: undefined })); }}
+                  onChangeText={(t) => { setPassword(t); setErrors(e => ({ ...e, password: undefined, general: undefined })); }}
                   placeholder="Enter your password"
                   placeholderTextColor="#C4C8D8"
                   secureTextEntry={!showPassword}
@@ -144,15 +163,17 @@ export default function LoginScreen() {
               )}
             </View>
             {/* Forgot Password */}
-            <Pressable style={styles.forgotBtn} onPress={() => router.push('/forgot-password')}>
+            <Pressable style={styles.forgotBtn} onPress={() => router.push('/(auth)/forgot-password')}>
               <Text style={styles.forgotText}>Forgot Password?</Text>
             </Pressable>
             {/* Log In Button — Gradient */}
             <Pressable
               onPress={handleLogin}
+              disabled={isLoading}
               style={({ pressed }) => [
                 styles.loginBtnWrap,
                 pressed && { opacity: 0.9, transform: [{ scale: 0.98 }] },
+                isLoading && { opacity: 0.7 },
               ]}
             >
               <LinearGradient
@@ -161,7 +182,11 @@ export default function LoginScreen() {
                 end={{ x: 1, y: 0 }}
                 style={styles.loginBtnGradient}
               >
-                <Text style={styles.loginBtnText}>Log In</Text>
+                {isLoading ? (
+                  <ActivityIndicator color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.loginBtnText}>Log In</Text>
+                )}
               </LinearGradient>
             </Pressable>
             {/* Register link */}
@@ -266,6 +291,22 @@ const styles = StyleSheet.create({
     color: '#8E93A8',
     lineHeight: 20,
     marginBottom: Spacing.lg,
+  },
+  // ── General Error ──
+  generalError: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEF2F2',
+    borderRadius: Radii.md,
+    padding: Spacing.md,
+    marginBottom: Spacing.md,
+    gap: 8,
+  },
+  generalErrorText: {
+    flex: 1,
+    fontSize: FontSizes.sm,
+    color: '#F87171',
+    fontWeight: '500',
   },
   // ── Inputs ──
   inputGroup: {

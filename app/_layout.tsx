@@ -1,15 +1,49 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { Stack } from 'expo-router';
+import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import React, { useEffect } from 'react';
+import { ActivityIndicator, View } from 'react-native';
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { AuthProvider, useAuth } from '@/hooks/use-auth';
 import { StudentPlanProvider } from '@/hooks/use-student-plan';
 import { AppColors } from '@/constants/theme';
 
 export const unstable_settings = {
-  initialRouteName: 'welcome',
+  initialRouteName: '(auth)',
 };
+
+// ─── Auth-aware navigation guard ─────────────────────────────────────────────
+function AuthGate({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAuth();
+  const segments = useSegments();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (loading) return;
+
+    const inAuthGroup = segments[0] === '(auth)';
+
+    if (!user && !inAuthGroup) {
+      // Not logged in and trying to access protected routes — redirect to welcome
+      router.replace('/(auth)/welcome');
+    } else if (user && inAuthGroup) {
+      // Logged in but on auth screens — redirect to main app
+      router.replace('/(tabs)');
+    }
+  }, [user, loading, segments]);
+
+  if (loading) {
+    return (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#0F1117' }}>
+        <ActivityIndicator size="large" color="#7C6AFF" />
+      </View>
+    );
+  }
+
+  return <>{children}</>;
+}
 
 export default function RootLayout() {
   const colorScheme = useColorScheme() ?? 'dark';
@@ -40,52 +74,26 @@ export default function RootLayout() {
       };
 
   return (
-    <StudentPlanProvider>
-      <ThemeProvider value={navTheme}>
-        <Stack
-          screenOptions={{
-            headerStyle: { backgroundColor: colors.surface },
-            headerTintColor: colors.text,
-            headerTitleStyle: { fontWeight: '700' },
-            contentStyle: { backgroundColor: colors.background },
-          }}
-        >
-          <Stack.Screen
-            name="welcome"
-            options={{ headerShown: false, animation: 'fade' }}
-          />
-          <Stack.Screen
-            name="login"
-            options={{ headerShown: false, animation: 'slide_from_right' }}
-          />
-          <Stack.Screen
-            name="register"
-            options={{ headerShown: false, animation: 'slide_from_right' }}
-          />
-          <Stack.Screen
-            name="forgot-password"
-            options={{ headerShown: false, animation: 'slide_from_right' }}
-          />
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen
-            name="course-detail-modal"
-            options={{ presentation: 'modal', title: 'Course Details', headerShown: false }}
-          />
-          <Stack.Screen
-            name="add-course-modal"
-            options={{ presentation: 'modal', title: 'Add Course', headerShown: false }}
-          />
-          <Stack.Screen
-            name="manage-tags-modal"
-            options={{ presentation: 'modal', title: 'Manage Tags', headerShown: false }}
-          />
-          <Stack.Screen
-            name="confirm-reset-modal"
-            options={{ presentation: 'modal', title: 'Reset Schedule', headerShown: false }}
-          />
-        </Stack>
-        <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
-      </ThemeProvider>
-    </StudentPlanProvider>
+    <AuthProvider>
+      <StudentPlanProvider>
+        <ThemeProvider value={navTheme}>
+          <AuthGate>
+            <Stack
+              screenOptions={{
+                headerStyle: { backgroundColor: colors.surface },
+                headerTintColor: colors.text,
+                headerTitleStyle: { fontWeight: '700' },
+                contentStyle: { backgroundColor: colors.background },
+              }}
+            >
+              <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              <Stack.Screen name="(modals)" options={{ headerShown: false, presentation: 'modal' }} />
+            </Stack>
+          </AuthGate>
+          <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+        </ThemeProvider>
+      </StudentPlanProvider>
+    </AuthProvider>
   );
 }

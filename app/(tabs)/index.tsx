@@ -115,7 +115,7 @@ export default function DashboardScreen() {
                   grade={sc.grade}
                   showPrereqWarning={hasConflict}
                   onPress={() => router.push({
-                    pathname: '/course-detail-modal',
+                    pathname: '/(modals)/course-detail-modal',
                     params: { courseId: course.id },
                   })}
                 />
@@ -143,7 +143,7 @@ export default function DashboardScreen() {
                   courseCode={course.code}
                   missingPrereqs={missingNames}
                   onPress={() => router.push({
-                    pathname: '/course-detail-modal',
+                    pathname: '/(modals)/course-detail-modal',
                     params: { courseId: course.id },
                   })}
                 />
@@ -158,7 +158,7 @@ export default function DashboardScreen() {
           <View style={styles.actions}>
             <Pressable
               style={[styles.actionBtn, { backgroundColor: colors.accentSoft, borderColor: colors.accent + '30' }]}
-              onPress={() => router.push('/add-course-modal')}
+              onPress={() => router.push('/(modals)/add-course-modal')}
             >
               <Ionicons name="add-circle" size={24} color={colors.accent} />
               <Text style={[styles.actionText, { color: colors.accent }]}>Add Course</Text>
@@ -214,7 +214,7 @@ export default function DashboardScreen() {
       {/* Floating Action Button */}
       <Pressable
         style={[styles.fab, { backgroundColor: colors.accent }]}
-        onPress={() => router.push('/add-course-modal')}
+        onPress={() => router.push('/(modals)/add-course-modal')}
       >
         <Ionicons name="add" size={28} color="#FFFFFF" />
       </Pressable>

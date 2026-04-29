@@ -132,7 +132,7 @@ export default function PlannerScreen() {
                     <Pressable
                       key={sc.courseId}
                       onPress={() => router.push({
-                        pathname: '/course-detail-modal',
+                        pathname: '/(modals)/course-detail-modal',
                         params: { courseId: course.id },
                       })}
                       onLongPress={() => {
@@ -182,7 +182,7 @@ export default function PlannerScreen() {
                   <Pressable
                     style={[styles.addCourseBtn, { borderColor: colors.border }]}
                     onPress={() => router.push({
-                      pathname: '/add-course-modal',
+                      pathname: '/(modals)/add-course-modal',
                       params: { semesterId: semester.id },
                     })}
                   >

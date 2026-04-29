@@ -55,7 +55,7 @@ export default function WelcomeScreen() {
 
         {/* Create Account Button — Gradient */}
         <Pressable
-          onPress={() => router.push('/register')}
+          onPress={() => router.push('/(auth)/register')}
           style={({ pressed }) => [
             styles.createBtnWrap,
             pressed && { opacity: 0.9, transform: [{ scale: 0.98 }] },
@@ -73,7 +73,7 @@ export default function WelcomeScreen() {
 
         {/* Log In Button — Outline */}
         <Pressable
-          onPress={() => router.push('/login')}
+          onPress={() => router.push('/(auth)/login')}
           style={({ pressed }) => [
             styles.loginBtn,
             pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] },
@@ -85,7 +85,7 @@ export default function WelcomeScreen() {
         {/* Bottom link */}
         <View style={styles.bottomLink}>
           <Text style={styles.bottomLinkText}>Don't have an account? </Text>
-          <Pressable onPress={() => router.push('/register')}>
+          <Pressable onPress={() => router.push('/(auth)/register')}>
             <Text style={styles.bottomLinkAction}>Sign Up</Text>
           </Pressable>
         </View>

@@ -1,4 +1,4 @@
-import { COURSE_CATALOG, DEFAULT_TAGS, INITIAL_STATE } from '@/constants/mock-data';
+import { COURSE_CATALOG, DEFAULT_TAGS, INITIAL_STATE, PROGRAM_CATALOGS, PROGRAM_SEMESTERS } from '@/constants/mock-data';
 import {
   Course,
   Semester,
@@ -6,7 +6,8 @@ import {
   StudentPlanState,
   Tag
 } from '@/constants/types';
-import React, { createContext, useCallback, useContext, useMemo, useReducer } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useReducer } from 'react';
+import { useAuth } from '@/hooks/use-auth';
 
 // ─── Reducer ────────────────────────────────────────────────────────────────────
 function studentPlanReducer(state: StudentPlanState, action: StudentPlanAction): StudentPlanState {
@@ -95,6 +96,12 @@ function studentPlanReducer(state: StudentPlanState, action: StudentPlanAction):
         customTags: state.customTags.filter(t => t.id !== action.tagId),
       };
     }
+    case 'SET_STUDENT_INFO': {
+      return { ...state, studentInfo: action.studentInfo };
+    }
+    case 'SET_PROGRAM': {
+      return { ...state, studentInfo: { ...state.studentInfo, program: action.program }, semesters: action.semesters };
+    }
     case 'RESET_PLAN': {
       return { ...INITIAL_STATE };
     }
@@ -123,12 +130,52 @@ interface StudentPlanContextType {
 const StudentPlanContext = createContext<StudentPlanContextType | null>(null);
 
 // ─── Provider ───────────────────────────────────────────────────────────────────
+// Map the register form program names to the mock-data keys
+const PROGRAM_NAME_MAP: Record<string, string> = {
+  'BS - Computer Science': 'BS Computer Science',
+  'BS - Information Systems': 'BS Information Systems',
+  'BS - Information Technology': 'BS Information Technology',
+  // Also allow direct keys
+  'BS Computer Science': 'BS Computer Science',
+  'BS Information Systems': 'BS Information Systems',
+  'BS Information Technology': 'BS Information Technology',
+};
+
 export function StudentPlanProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(studentPlanReducer, INITIAL_STATE);
+  const { profile } = useAuth();
+
+  // Sync student info from Firebase profile
+  useEffect(() => {
+    if (profile) {
+      const programKey = PROGRAM_NAME_MAP[profile.program] || 'BS Computer Science';
+
+      dispatch({
+        type: 'SET_STUDENT_INFO',
+        studentInfo: {
+          name: `${profile.firstName} ${profile.lastName}`,
+          program: programKey,
+          yearLevel: profile.yearLevel || 1,
+          studentId: profile.idNumber,
+        },
+      });
+
+      // Load the correct semesters for the selected program
+      const semesters = PROGRAM_SEMESTERS[programKey];
+      if (semesters) {
+        dispatch({ type: 'SET_PROGRAM', program: programKey, semesters });
+      }
+    }
+  }, [profile]);
+
+  // Get the active course catalog based on the student's program
+  const activeCatalog = useMemo(() => {
+    return PROGRAM_CATALOGS[state.studentInfo.program] || COURSE_CATALOG;
+  }, [state.studentInfo.program]);
 
   const getCourse = useCallback((id: string) => {
-    return COURSE_CATALOG.find(c => c.id === id);
-  }, []);
+    return activeCatalog.find(c => c.id === id);
+  }, [activeCatalog]);
 
   const getAllTags = useCallback(() => {
     return [...DEFAULT_TAGS, ...state.customTags];
@@ -164,7 +211,7 @@ export function StudentPlanProvider({ children }: { children: React.ReactNode })
 
     for (const sem of state.semesters) {
       for (const sc of sem.courses) {
-        const course = COURSE_CATALOG.find(c => c.id === sc.courseId);
+        const course = activeCatalog.find(c => c.id === sc.courseId);
         if (!course) continue;
         allCredits += course.credits;
         const gradeNum = sc.grade ? parseFloat(sc.grade) : NaN;
@@ -185,7 +232,7 @@ export function StudentPlanProvider({ children }: { children: React.ReactNode })
       totalCredits: allCredits,
       completedCredits,
     };
-  }, [state.semesters]);
+  }, [state.semesters, activeCatalog]);
 
   const getSemesterGPA = useCallback((semesterId: string) => {
     const sem = state.semesters.find(s => s.id === semesterId);
@@ -193,17 +240,17 @@ export function StudentPlanProvider({ children }: { children: React.ReactNode })
     let points = 0;
     let credits = 0;
     for (const sc of sem.courses) {
-      const course = COURSE_CATALOG.find(c => c.id === sc.courseId);
+      const course = activeCatalog.find(c => c.id === sc.courseId);
       const gradeNum = sc.grade ? parseFloat(sc.grade) : NaN;
       if (!course || !sc.grade || isNaN(gradeNum)) continue;
       points += gradeNum * course.credits;
       credits += course.credits;
     }
     return credits > 0 ? points / credits : 0;
-  }, [state.semesters]);
+  }, [state.semesters, activeCatalog]);
 
   const checkPrerequisiteConflicts = useCallback((semesterId: string, courseId: string) => {
-    const course = COURSE_CATALOG.find(c => c.id === courseId);
+    const course = activeCatalog.find(c => c.id === courseId);
     if (!course || course.prerequisites.length === 0) return [];
 
     const sem = state.semesters.find(s => s.id === semesterId);
@@ -219,7 +266,7 @@ export function StudentPlanProvider({ children }: { children: React.ReactNode })
     }
 
     return course.prerequisites.filter(prereqId => !completedCourseIds.has(prereqId));
-  }, [state.semesters]);
+  }, [state.semesters, activeCatalog]);
 
   const forecastGPA = useCallback((hypotheticalGrades: Record<string, string>) => {
     let totalPoints = 0;
@@ -227,7 +274,7 @@ export function StudentPlanProvider({ children }: { children: React.ReactNode })
 
     for (const sem of state.semesters) {
       for (const sc of sem.courses) {
-        const course = COURSE_CATALOG.find(c => c.id === sc.courseId);
+        const course = activeCatalog.find(c => c.id === sc.courseId);
         if (!course) continue;
         const grade = hypotheticalGrades[sc.courseId] || sc.grade;
         const gradeNum = grade ? parseFloat(grade) : NaN;
@@ -239,7 +286,7 @@ export function StudentPlanProvider({ children }: { children: React.ReactNode })
     }
 
     return totalCredits > 0 ? totalPoints / totalCredits : 0;
-  }, [state.semesters]);
+  }, [state.semesters, activeCatalog]);
 
   const value = useMemo(() => ({
     state, dispatch, getCourse, getAllTags, getTagById,
