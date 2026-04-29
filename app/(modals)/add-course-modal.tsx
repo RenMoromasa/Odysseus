@@ -7,7 +7,6 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useStudentPlan } from '@/hooks/use-student-plan';
 import { AppColors, Spacing, FontSizes, Radii } from '@/constants/theme';
-import { COURSE_CATALOG } from '@/constants/mock-data';
 import { SearchBar } from '@/components/ui/search-bar';
 
 export default function AddCourseModal() {
@@ -15,7 +14,7 @@ export default function AddCourseModal() {
   const scheme = useColorScheme() ?? 'dark';
   const colors = AppColors[scheme];
   const router = useRouter();
-  const { state, dispatch, getCourse, getTagById, checkPrerequisiteConflicts } = useStudentPlan();
+  const { state, dispatch, courseCatalog, getCourse, getTagById, checkPrerequisiteConflicts } = useStudentPlan();
 
   const [search, setSearch] = useState('');
   const [selectedCourseId, setSelectedCourseId] = useState<string | undefined>(params.courseId);
@@ -31,7 +30,7 @@ export default function AddCourseModal() {
   }, [state.semesters]);
 
   const availableCourses = useMemo(() => {
-    let courses = COURSE_CATALOG.filter(c => !plannedCourseIds.has(c.id));
+    let courses = courseCatalog.filter(c => !plannedCourseIds.has(c.id));
     if (search.trim()) {
       const q = search.toLowerCase();
       courses = courses.filter(c =>
@@ -40,7 +39,7 @@ export default function AddCourseModal() {
       );
     }
     return courses;
-  }, [search, plannedCourseIds]);
+  }, [search, plannedCourseIds, courseCatalog]);
 
   const nonCompletedSemesters = state.semesters.filter(s => s.status !== 'completed');
 

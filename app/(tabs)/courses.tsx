@@ -7,7 +7,6 @@ import { useRouter } from 'expo-router';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useStudentPlan } from '@/hooks/use-student-plan';
 import { AppColors, Spacing, FontSizes, Radii } from '@/constants/theme';
-import { COURSE_CATALOG } from '@/constants/mock-data';
 import { CourseCard } from '@/components/ui/course-card';
 import { SearchBar } from '@/components/ui/search-bar';
 
@@ -15,7 +14,7 @@ export default function CoursesScreen() {
   const scheme = useColorScheme() ?? 'dark';
   const colors = AppColors[scheme];
   const router = useRouter();
-  const { getCourse, getTagById, getAllTags, getCourseGrade } = useStudentPlan();
+  const { courseCatalog, getCourse, getTagById, getAllTags, getCourseGrade } = useStudentPlan();
 
   const [search, setSearch] = useState('');
   const [activeTag, setActiveTag] = useState<string | null>(null);
@@ -23,7 +22,7 @@ export default function CoursesScreen() {
   const allTags = getAllTags();
 
   const filteredCourses = useMemo(() => {
-    let courses = COURSE_CATALOG;
+    let courses = courseCatalog;
     if (search.trim()) {
       const q = search.toLowerCase();
       courses = courses.filter(c =>
@@ -36,7 +35,7 @@ export default function CoursesScreen() {
       courses = courses.filter(c => c.tags.includes(activeTag));
     }
     return courses;
-  }, [search, activeTag]);
+  }, [search, activeTag, courseCatalog]);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -45,7 +44,7 @@ export default function CoursesScreen() {
       <View style={styles.headerWrap}>
         <Text style={[styles.title, { color: colors.text }]}>Course Catalog</Text>
         <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-          {COURSE_CATALOG.length} courses available
+          {courseCatalog.length} courses available
         </Text>
 
         <View style={styles.searchWrap}>

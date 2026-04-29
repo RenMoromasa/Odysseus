@@ -115,6 +115,7 @@ interface StudentPlanContextType {
   state: StudentPlanState;
   dispatch: React.Dispatch<StudentPlanAction>;
   // Helpers
+  courseCatalog: Course[];
   getCourse: (id: string) => Course | undefined;
   getAllTags: () => Tag[];
   getTagById: (id: string) => Tag | undefined;
@@ -289,10 +290,10 @@ export function StudentPlanProvider({ children }: { children: React.ReactNode })
   }, [state.semesters, activeCatalog]);
 
   const value = useMemo(() => ({
-    state, dispatch, getCourse, getAllTags, getTagById,
+    state, dispatch, courseCatalog: activeCatalog, getCourse, getAllTags, getTagById,
     calculateGPA, getSemesterGPA, checkPrerequisiteConflicts,
     isCourseCompleted, getCourseGrade, getCourseSemester, forecastGPA,
-  }), [state, dispatch, getCourse, getAllTags, getTagById, calculateGPA,
+  }), [state, dispatch, activeCatalog, getCourse, getAllTags, getTagById, calculateGPA,
        getSemesterGPA, checkPrerequisiteConflicts, isCourseCompleted,
        getCourseGrade, getCourseSemester, forecastGPA]);
 
