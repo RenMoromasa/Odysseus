@@ -1,12 +1,14 @@
 import { GlassCard } from '@/components/ui/glass-card';
 import { AppColors, FontSizes, Radii, Spacing } from '@/constants/theme';
 import { getThemeMode, setThemeMode, useColorScheme } from '@/hooks/use-color-scheme';
+import { useAuth } from '@/hooks/use-auth';
 import { useStudentPlan } from '@/hooks/use-student-plan';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 
 import {
+  Alert,
   Pressable,
   ScrollView,
   StatusBar,
@@ -20,6 +22,25 @@ export default function ProfileScreen() {
   const colors = AppColors[scheme];
   const router = useRouter();
   const { state, calculateGPA } = useStudentPlan();
+  const { logout, profile } = useAuth();
+
+  const handleLogout = () => {
+    Alert.alert(
+      'Sign Out',
+      'Are you sure you want to sign out?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Sign Out',
+          style: 'destructive',
+          onPress: async () => {
+            await logout();
+            router.replace('/(auth)/welcome');
+          },
+        },
+      ]
+    );
+  };
 
   const gpaData = calculateGPA();
   const completedSems = state.semesters.filter(s => s.status === 'completed').length;
@@ -64,6 +85,11 @@ const [themeMode, setThemeModeState] = useState(getThemeMode());
           <Text style={[styles.studentProgram, { color: colors.textSecondary }]}>
             {state.studentInfo.program}
           </Text>
+          {profile?.email && (
+            <Text style={[styles.studentEmail, { color: colors.textMuted }]}>
+              {profile.email}
+            </Text>
+          )}
           <View style={styles.studentMeta}>
             <View style={[styles.metaChip, { backgroundColor: colors.surfaceLight }]}>
               <Text style={[styles.metaChipText, { color: colors.textSecondary }]}>
@@ -141,7 +167,7 @@ const [themeMode, setThemeModeState] = useState(getThemeMode());
 
             <Pressable
               style={[styles.settingItem, { borderBottomColor: colors.border }]}
-              onPress={() => router.push('/manage-tags-modal')}
+              onPress={() => router.push('/(modals)/manage-tags-modal')}
             >
               <View style={styles.settingLeft}>
                 <View style={[styles.settingIcon, { backgroundColor: colors.secondarySoft }]}>
@@ -153,14 +179,27 @@ const [themeMode, setThemeModeState] = useState(getThemeMode());
             </Pressable>
 
             <Pressable
-              style={styles.settingItem}
-              onPress={() => router.push('/confirm-reset-modal')}
+              style={[styles.settingItem, { borderBottomColor: colors.border }]}
+              onPress={() => router.push('/(modals)/confirm-reset-modal')}
             >
               <View style={styles.settingLeft}>
                 <View style={[styles.settingIcon, { backgroundColor: colors.dangerSoft }]}>
                   <Ionicons name="trash" size={18} color={colors.danger} />
                 </View>
                 <Text style={[styles.settingLabel, { color: colors.danger }]}>Reset Schedule</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+            </Pressable>
+
+            <Pressable
+              style={styles.settingItem}
+              onPress={handleLogout}
+            >
+              <View style={styles.settingLeft}>
+                <View style={[styles.settingIcon, { backgroundColor: colors.dangerSoft }]}>
+                  <Ionicons name="log-out" size={18} color={colors.danger} />
+                </View>
+                <Text style={[styles.settingLabel, { color: colors.danger }]}>Sign Out</Text>
               </View>
               <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
             </Pressable>
@@ -224,6 +263,7 @@ const styles = StyleSheet.create({
   },
   studentName: { fontSize: FontSizes.xl, fontWeight: '800' },
   studentProgram: { fontSize: FontSizes.md, marginTop: 2 },
+  studentEmail: { fontSize: FontSizes.sm, marginTop: 4 },
   studentMeta: {
     flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.md,
   },

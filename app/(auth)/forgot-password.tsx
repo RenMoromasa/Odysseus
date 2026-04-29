@@ -2,20 +2,24 @@ import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, Pressable, StatusBar,
   TextInput, KeyboardAvoidingView, Platform, ScrollView,
+  ActivityIndicator,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Spacing, FontSizes, Radii } from '@/constants/theme';
+import { useAuth } from '@/hooks/use-auth';
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
+  const { resetPassword } = useAuth();
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
   const [sent, setSent] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleReset = () => {
+  const handleReset = async () => {
     if (!email.trim()) {
       setError('Email address is required');
       return;
@@ -25,7 +29,15 @@ export default function ForgotPasswordScreen() {
       return;
     }
     setError('');
-    setSent(true);
+    setIsLoading(true);
+    try {
+      await resetPassword(email.trim());
+      setSent(true);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -110,9 +122,11 @@ export default function ForgotPasswordScreen() {
                 {/* Reset Button — Gradient */}
                 <Pressable
                   onPress={handleReset}
+                  disabled={isLoading}
                   style={({ pressed }) => [
                     styles.resetBtnWrap,
                     pressed && { opacity: 0.9, transform: [{ scale: 0.98 }] },
+                    isLoading && { opacity: 0.7 },
                   ]}
                 >
                   <LinearGradient
@@ -121,7 +135,11 @@ export default function ForgotPasswordScreen() {
                     end={{ x: 1, y: 0 }}
                     style={styles.resetBtnGradient}
                   >
-                    <Text style={styles.resetBtnText}>Send Reset Link</Text>
+                    {isLoading ? (
+                      <ActivityIndicator color="#FFFFFF" />
+                    ) : (
+                      <Text style={styles.resetBtnText}>Send Reset Link</Text>
+                    )}
                   </LinearGradient>
                 </Pressable>
 

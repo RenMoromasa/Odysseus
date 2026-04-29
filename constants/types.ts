@@ -69,4 +69,6 @@ export type StudentPlanAction =
   | { type: 'ADD_TAG'; tag: Tag }
   | { type: 'UPDATE_TAG'; tagId: string; updates: Partial<Tag> }
   | { type: 'DELETE_TAG'; tagId: string }
+  | { type: 'SET_STUDENT_INFO'; studentInfo: StudentInfo }
+  | { type: 'SET_PROGRAM'; program: string; semesters: Semester[] }
   | { type: 'RESET_PLAN' };

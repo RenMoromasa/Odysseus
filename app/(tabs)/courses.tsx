@@ -121,7 +121,7 @@ export default function CoursesScreen() {
                 tag={tag}
                 grade={grade}
                 onPress={() => router.push({
-                  pathname: '/course-detail-modal',
+                  pathname: '/(modals)/course-detail-modal',
                   params: { courseId: course.id },
                 })}
               />

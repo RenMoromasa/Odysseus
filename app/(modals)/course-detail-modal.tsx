@@ -228,7 +228,7 @@ export default function CourseDetailModal() {
               onPress={() => {
                 router.back();
                 setTimeout(() => {
-                  router.push({ pathname: '/add-course-modal', params: { courseId: course.id } });
+                  router.push({ pathname: '/(modals)/add-course-modal', params: { courseId: course.id } });
                 }, 300);
               }}
             >
