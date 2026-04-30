@@ -5,7 +5,6 @@ import { useRouter } from 'expo-router';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useStudentPlan } from '@/hooks/use-student-plan';
 import { AppColors, Spacing, FontSizes, Radii } from '@/constants/theme';
-import { COURSE_CATALOG } from '@/constants/mock-data';
 import { GlassCard } from '@/components/ui/glass-card';
 import { GPARing } from '@/components/ui/gpa-ring';
 import { CourseCard } from '@/components/ui/course-card';

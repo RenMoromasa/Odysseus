@@ -1,5 +1,4 @@
 import { FontSizes, Radii, Spacing } from '@/constants/theme';
-import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React from 'react';
@@ -39,11 +38,10 @@ export default function WelcomeScreen() {
 
       {/* ── Bottom: White Card with Actions ────────────────────────────── */}
       <View style={styles.bottomCard}>
-        <Text style={styles.welcomeTitle}>Welcome!</Text>
-        <Text style={styles.subtitle}>Hi there!</Text>
+        <Text style={styles.welcomeTitle}>Welcome to Odysseus!</Text> 
         <Text style={styles.description}>
           We're here to help you plan your academic journey.{'\n'}
-          The choice is yours; Log in or create account.
+          Log in or create account.
         </Text>
 
         {/* Create Account Button — Gradient */}
@@ -153,14 +151,14 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.08,
     shadowRadius: 20,
-    elevation: 12,
+    elevation: 10,
   },
   welcomeTitle: {
-    fontSize: 32,
+    fontSize: 30,
     fontWeight: '800',
     color: '#1A1D2E',
     letterSpacing: -0.5,
-    marginBottom: 6,
+    marginBottom: 15,
   },
   subtitle: {
     fontSize: FontSizes.md,
@@ -173,7 +171,7 @@ const styles = StyleSheet.create({
     color: '#8E93A8',
     textAlign: 'center',
     lineHeight: 20,
-    marginBottom: Spacing.xl,
+    marginBottom: Spacing.lg,
   },
 
   // ── Create Account Button ──

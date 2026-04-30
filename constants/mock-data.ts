@@ -641,7 +641,7 @@ const IT_SPECIFIC_COURSES: Course[] = [
     credits: 3, prerequisites: [], tags: ['profElective'],
   },
   {
-    id: 'IT3104N', code: 'IT 3104N', name: 'Information Assurance and Security',
+    id: 'IT3104A', code: 'IT 3104A', name: 'Information Assurance and Security',
     description: 'Cybersecurity fundamentals, cryptography, network security, and risk management.',
     credits: 3, prerequisites: ['CIS1205'], tags: ['coreMajor'],
   },

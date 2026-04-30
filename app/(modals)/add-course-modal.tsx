@@ -7,7 +7,6 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useStudentPlan } from '@/hooks/use-student-plan';
 import { AppColors, Spacing, FontSizes, Radii } from '@/constants/theme';
-import { COURSE_CATALOG } from '@/constants/mock-data';
 import { SearchBar } from '@/components/ui/search-bar';
 
 export default function AddCourseModal() {
@@ -15,11 +14,22 @@ export default function AddCourseModal() {
   const scheme = useColorScheme() ?? 'dark';
   const colors = AppColors[scheme];
   const router = useRouter();
-  const { state, dispatch, getCourse, getTagById, checkPrerequisiteConflicts } = useStudentPlan();
+  const { state, dispatch, catalog, getCourse, getTagById, checkPrerequisiteConflicts } = useStudentPlan();
 
   const [search, setSearch] = useState('');
-  const [selectedCourseId, setSelectedCourseId] = useState<string | undefined>(params.courseId);
+  const [selectedCourseIds, setSelectedCourseIds] = useState<Set<string>>(
+    () => new Set(params.courseId ? [params.courseId] : [])
+  );
   const [selectedSemesterId, setSelectedSemesterId] = useState<string | undefined>(params.semesterId);
+
+  const toggleCourse = (id: string) => {
+    setSelectedCourseIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   // Courses already in any semester
   const plannedCourseIds = useMemo(() => {
@@ -31,7 +41,7 @@ export default function AddCourseModal() {
   }, [state.semesters]);
 
   const availableCourses = useMemo(() => {
-    let courses = COURSE_CATALOG.filter(c => !plannedCourseIds.has(c.id));
+    let courses = catalog.filter(c => !plannedCourseIds.has(c.id));
     if (search.trim()) {
       const q = search.toLowerCase();
       courses = courses.filter(c =>
@@ -40,22 +50,30 @@ export default function AddCourseModal() {
       );
     }
     return courses;
-  }, [search, plannedCourseIds]);
+  }, [catalog, search, plannedCourseIds]);
 
   const nonCompletedSemesters = state.semesters.filter(s => s.status !== 'completed');
 
-  const selectedCourse = selectedCourseId ? getCourse(selectedCourseId) : null;
-  const conflicts = selectedCourseId && selectedSemesterId
-    ? checkPrerequisiteConflicts(selectedSemesterId, selectedCourseId)
-    : [];
+  const conflicts = useMemo(() => {
+    if (!selectedSemesterId || selectedCourseIds.size === 0) return [];
+    const set = new Set<string>();
+    for (const id of selectedCourseIds) {
+      for (const c of checkPrerequisiteConflicts(selectedSemesterId, id)) set.add(c);
+    }
+    return Array.from(set);
+  }, [selectedSemesterId, selectedCourseIds, checkPrerequisiteConflicts]);
+
+  const canAdd = selectedCourseIds.size > 0 && !!selectedSemesterId;
 
   const handleAdd = () => {
-    if (!selectedCourseId || !selectedSemesterId) return;
-    dispatch({
-      type: 'ADD_COURSE_TO_SEMESTER',
-      semesterId: selectedSemesterId,
-      courseId: selectedCourseId,
-    });
+    if (!canAdd || !selectedSemesterId) return;
+    for (const courseId of selectedCourseIds) {
+      dispatch({
+        type: 'ADD_COURSE_TO_SEMESTER',
+        semesterId: selectedSemesterId,
+        courseId,
+      });
+    }
     router.back();
   };
 
@@ -113,7 +131,7 @@ export default function AddCourseModal() {
             ) : (
               availableCourses.map(course => {
                 const tag = getTagById(course.tags[0]);
-                const isSelected = selectedCourseId === course.id;
+                const isSelected = selectedCourseIds.has(course.id);
                 return (
                   <Pressable
                     key={course.id}
@@ -124,7 +142,7 @@ export default function AddCourseModal() {
                         borderColor: isSelected ? colors.accent + '50' : colors.glassBorder,
                       },
                     ]}
-                    onPress={() => setSelectedCourseId(course.id)}
+                    onPress={() => toggleCourse(course.id)}
                   >
                     <View style={[styles.courseStrip, { backgroundColor: tag?.color ?? colors.accent }]} />
                     <View style={styles.courseContent}>
@@ -137,9 +155,13 @@ export default function AddCourseModal() {
                         {course.prerequisites.length > 0 && ` · ${course.prerequisites.length} prereq`}
                       </Text>
                     </View>
-                    {isSelected && (
-                      <Ionicons name="checkmark-circle" size={22} color={colors.accent} />
-                    )}
+                    <View style={styles.checkboxWrap}>
+                      <Ionicons
+                        name={isSelected ? 'checkbox' : 'square-outline'}
+                        size={24}
+                        color={isSelected ? colors.accent : colors.textMuted}
+                      />
+                    </View>
                   </Pressable>
                 );
               })
@@ -162,18 +184,18 @@ export default function AddCourseModal() {
           style={[
             styles.addBtn,
             {
-              backgroundColor: selectedCourseId && selectedSemesterId ? colors.accent : colors.surfaceLight,
-              opacity: selectedCourseId && selectedSemesterId ? 1 : 0.5,
+              backgroundColor: canAdd ? colors.accent : colors.surfaceLight,
+              opacity: canAdd ? 1 : 0.5,
             },
           ]}
           onPress={handleAdd}
-          disabled={!selectedCourseId || !selectedSemesterId}
+          disabled={!canAdd}
         >
-          <Ionicons name="add-circle" size={20} color={selectedCourseId && selectedSemesterId ? '#FFF' : colors.textMuted} />
-          <Text style={[styles.addBtnText, {
-            color: selectedCourseId && selectedSemesterId ? '#FFF' : colors.textMuted,
-          }]}>
-            Add to Plan
+          <Ionicons name="add-circle" size={20} color={canAdd ? '#FFF' : colors.textMuted} />
+          <Text style={[styles.addBtnText, { color: canAdd ? '#FFF' : colors.textMuted }]}>
+            {selectedCourseIds.size > 1
+              ? `Add ${selectedCourseIds.size} Courses to Plan`
+              : 'Add to Plan'}
           </Text>
         </Pressable>
       </ScrollView>
@@ -207,6 +229,7 @@ const styles = StyleSheet.create({
     borderWidth: 1, overflow: 'hidden',
   },
   courseStrip: { width: 4, alignSelf: 'stretch' },
+  checkboxWrap: { paddingRight: Spacing.md, paddingLeft: Spacing.xs },
   courseContent: { flex: 1, padding: Spacing.md },
   courseCode: { fontSize: FontSizes.xs, fontWeight: '600', letterSpacing: 0.3 },
   courseName: { fontSize: FontSizes.md, fontWeight: '600', marginTop: 1 },
