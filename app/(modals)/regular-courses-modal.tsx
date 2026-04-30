@@ -13,49 +13,111 @@ import {
   Text,
   View,
 } from "react-native";
+import { getCurrentSemester, isSemesterMatching } from "@/utils/semester";
 
 export default function RegularCoursesModal() {
   const router = useRouter();
   const colorScheme = useColorScheme() ?? "dark";
   const colors = AppColors[colorScheme];
   const { profile, updateProfile } = useAuth();
-  const { state: planState } = useStudentPlan();
+  const { state: planState, dispatch, catalog } = useStudentPlan();
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    // Simulate loading completed/in-progress courses
-    // For regular students, we can auto-populate from the semester template
+useEffect(() => {
+    // For regular students, populate prospectus courses and set proper semester statuses
+    const hasEmptySemesters = planState.semesters.some(s => s.courses.length === 0);
+
+    if (planState.semesters.length > 0 && hasEmptySemesters && catalog.length > 0) {
+      const currentSem = getCurrentSemester();
+      const studentYear = planState.studentInfo.yearLevel;
+      const coursesPerSemester = Math.ceil(catalog.length / planState.semesters.length);
+
+      // First pass: add courses to semesters
+      for (let i = 0; i < planState.semesters.length; i++) {
+        const semester = planState.semesters[i];
+        const startIdx = i * coursesPerSemester;
+        const endIdx = Math.min(startIdx + coursesPerSemester, catalog.length);
+
+        for (let j = startIdx; j < endIdx; j++) {
+          dispatch({
+            type: 'ADD_COURSE_TO_SEMESTER',
+            semesterId: semester.id,
+            courseId: catalog[j].id,
+          });
+        }
+      }
+
+      // Second pass: set semester statuses and grades
+      for (let i = 0; i < planState.semesters.length; i++) {
+        const semester = planState.semesters[i];
+        const isSameYear = semester.year === studentYear;
+
+        // Only process semesters in the student's current year
+        if (isSameYear) {
+          const currentTermNum = currentSem.term === 'summer' ? 3 : currentSem.term === 'first' ? 1 : 2;
+          const isCurrentSem = semester.term === currentTermNum;
+          const isBeforeCurrent = semester.term < currentTermNum;
+
+          if (isCurrentSem) {
+            // Mark current semester as in-progress
+            dispatch({
+              type: 'SET_SEMESTER_STATUS',
+              semesterId: semester.id,
+              status: 'in-progress',
+            });
+          } else if (isBeforeCurrent) {
+            // Mark previous semesters as completed and grade courses
+            dispatch({
+              type: 'SET_SEMESTER_STATUS',
+              semesterId: semester.id,
+              status: 'completed',
+            });
+
+            const startIdx = i * coursesPerSemester;
+            const endIdx = Math.min(startIdx + coursesPerSemester, catalog.length);
+
+            for (let j = startIdx; j < endIdx; j++) {
+              dispatch({
+                type: 'SET_GRADE',
+                semesterId: semester.id,
+                courseId: catalog[j].id,
+                grade: '3.00',
+              });
+            }
+          }
+          // Future semesters (isAfterCurrent) remain as 'planned'
+        }
+      }
+    }
+
     const timer = setTimeout(() => {
       setIsLoading(false);
     }, 500);
     return () => clearTimeout(timer);
-  }, []);
+  }, [dispatch, planState.semesters, catalog, planState.studentInfo.yearLevel]);
 
-  const getCompletedAndInProgressCourses = () => {
-    const courses = [];
+  // Get all courses from the prospectus (full curriculum)
+  const getAllProspectusCourses = () => {
+    const allCourseIds: string[] = [];
     for (const semester of planState.semesters) {
-      if (
-        semester.status === "completed" ||
-        semester.status === "in-progress"
-      ) {
-        for (const course of semester.courses) {
-          courses.push(course.courseId);
+      for (const course of semester.courses) {
+        if (!allCourseIds.includes(course.courseId)) {
+          allCourseIds.push(course.courseId);
         }
       }
     }
-    return courses;
+return allCourseIds;
   };
 
   const handleContinue = async () => {
     setIsSaving(true);
     try {
-      const completedCourses = getCompletedAndInProgressCourses();
       await updateProfile({
-        completedCourses,
         isOnboarded: true,
+        studentType: "regular",
       });
       router.replace("/(tabs)");
     } catch (err: any) {
@@ -77,13 +139,10 @@ export default function RegularCoursesModal() {
     );
   }
 
-  const completedCourses = getCompletedAndInProgressCourses();
-  const inProgressCount = planState.semesters
-    .filter((s) => s.status === "in-progress")
-    .reduce((sum, s) => sum + s.courses.length, 0);
-  const completedCount = planState.semesters
-    .filter((s) => s.status === "completed")
-    .reduce((sum, s) => sum + s.courses.length, 0);
+  // For regular students, all courses in the prospectus are loaded
+  const allProspectusCourseIds = getAllProspectusCourses();
+  const totalCourseCount = allProspectusCourseIds.length;
+  const semesterCount = planState.semesters.length;
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -98,7 +157,7 @@ export default function RegularCoursesModal() {
             Setting up your courses
           </Text>
           <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-            We've loaded your curriculum courses
+            We've loaded your full curriculum prospectus
           </Text>
         </View>
 
@@ -120,6 +179,22 @@ export default function RegularCoursesModal() {
           </View>
         )}
 
+        {/* Info Banner */}
+        <View
+          style={[
+            styles.infoBanner,
+            {
+              backgroundColor: colors.accentSoft,
+              borderColor: colors.accent,
+            },
+          ]}
+        >
+          <Ionicons name="information-circle" size={18} color={colors.accent} />
+          <Text style={[styles.infoText, { color: colors.accent }]}>
+            Your complete curriculum has been automatically loaded based on your program. You're ready to start tracking your progress!
+          </Text>
+        </View>
+
         {/* Course Summary */}
         <View style={styles.summaryContainer}>
           <View
@@ -139,7 +214,7 @@ export default function RegularCoursesModal() {
                 ]}
               >
                 <Ionicons
-                  name="checkmark-circle"
+                  name="book"
                   size={24}
                   color={colors.accent}
                 />
@@ -148,10 +223,10 @@ export default function RegularCoursesModal() {
                 <Text
                   style={[styles.summaryLabel, { color: colors.textSecondary }]}
                 >
-                  Completed Courses
+                  Total Courses
                 </Text>
                 <Text style={[styles.summaryValue, { color: colors.text }]}>
-                  {completedCount}
+                  {totalCourseCount}
                 </Text>
               </View>
             </View>
@@ -167,16 +242,16 @@ export default function RegularCoursesModal() {
                   { backgroundColor: colors.warningSoft },
                 ]}
               >
-                <Ionicons name="school" size={24} color={colors.warning} />
+                <Ionicons name="calendar" size={24} color={colors.warning} />
               </View>
               <View>
                 <Text
                   style={[styles.summaryLabel, { color: colors.textSecondary }]}
                 >
-                  Currently Taking
+                  Total Semesters
                 </Text>
                 <Text style={[styles.summaryValue, { color: colors.text }]}>
-                  {inProgressCount}
+                  {semesterCount}
                 </Text>
               </View>
             </View>
@@ -192,17 +267,18 @@ export default function RegularCoursesModal() {
               color={colors.accent}
             />
             <Text style={[styles.infoText, { color: colors.textSecondary }]}>
-              We've automatically populated your completed and current courses
-              based on your program's curriculum.
+              We've automatically populated your complete course prospectus
+              based on your program's curriculum. All {totalCourseCount} courses
+              across {semesterCount} semesters have been added to your plan.
             </Text>
           </View>
         </View>
 
         {/* Course Details */}
-        {completedCount > 0 && (
+        {totalCourseCount > 0 && (
           <View style={styles.detailsSection}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>
-              Course Summary
+              Your Curriculum
             </Text>
             <View
               style={[
@@ -216,14 +292,12 @@ export default function RegularCoursesModal() {
               <Text
                 style={[styles.detailsText, { color: colors.textSecondary }]}
               >
-                {completedCount} course{completedCount !== 1 ? "s" : ""}{" "}
-                completed
+                {totalCourseCount} courses in your prospectus
               </Text>
               <Text
                 style={[styles.detailsText, { color: colors.textSecondary }]}
               >
-                {inProgressCount} course{inProgressCount !== 1 ? "s" : ""} in
-                progress
+                {semesterCount} semesters to complete
               </Text>
             </View>
           </View>
@@ -297,6 +371,21 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.sm,
     fontWeight: "500",
   },
+  infoBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: Radii.md,
+    borderWidth: 1,
+    marginBottom: Spacing.md,
+    gap: Spacing.sm,
+  },
+  infoText: {
+    flex: 1,
+    fontSize: FontSizes.sm,
+    fontWeight: "500",
+  },
   summaryContainer: {
     marginBottom: Spacing.lg,
   },
@@ -339,11 +428,6 @@ const styles = StyleSheet.create({
     gap: Spacing.md,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.md,
-  },
-  infoText: {
-    flex: 1,
-    fontSize: FontSizes.sm,
-    lineHeight: 20,
   },
   detailsSection: {
     marginBottom: Spacing.lg,

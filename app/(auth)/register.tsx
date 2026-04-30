@@ -94,7 +94,7 @@ export default function RegisterScreen() {
     setErrors({});
     setIsLoading(true);
     try {
-      await register({
+await register({
         firstName: firstName.trim(),
         lastName: lastName.trim(),
         email: email.trim(),
@@ -103,7 +103,7 @@ export default function RegisterScreen() {
         program: selectedProgram,
         yearLevel: selectedYearLevel,
       });
-      router.replace('/(tabs)');
+      // Don't manually redirect - let AuthGate in _layout.tsx handle the flow
     } catch (err: any) {
       setErrors({ general: err.message });
     } finally {

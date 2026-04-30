@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useStudentPlan } from "@/hooks/use-student-plan";
 import { fetchCourseCatalog } from "@/services/catalog";
+import { getCurrentSemester, isSemesterMatching } from "@/utils/semester";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
@@ -22,8 +23,8 @@ export default function IrregularCoursesModal() {
   const router = useRouter();
   const colorScheme = useColorScheme() ?? "dark";
   const colors = AppColors[colorScheme];
-  const { profile, updateProfile } = useAuth();
-  const { state: planState, dispatch } = useStudentPlan();
+  const { updateProfile } = useAuth();
+  const { catalog, dispatch, state: planState } = useStudentPlan();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCourses, setSelectedCourses] = useState<string[]>([]);
@@ -32,43 +33,65 @@ export default function IrregularCoursesModal() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showModal, setShowModal] = useState(false);
 
+  // Load courses from catalog
   useEffect(() => {
-    const loadCourses = async () => {
-      try {
-        if (!profile?.program) {
-          setError("Program not found");
-          return;
-        }
-        const courses = await fetchCourseCatalog(profile.program);
-        setAvailableCourses(courses);
-        setFilteredCourses(courses);
-      } catch (err: any) {
-        setError("Failed to load courses");
-      } finally {
-        setIsLoading(false);
-      }
-    };
+    if (catalog.length > 0) {
+      setAvailableCourses(catalog);
+      setFilteredCourses(catalog);
+      setIsLoading(false);
+    } else {
+      fetchCourseCatalog("BS Computer Science")
+        .then((courses) => {
+          setAvailableCourses(courses);
+          setFilteredCourses(courses);
+        })
+        .catch(() => {
+          setError("Failed to load courses");
+        })
+        .finally(() => setIsLoading(false));
+    }
+  }, [catalog]);
 
-    loadCourses();
-  }, [profile?.program]);
-
+  // Filter courses based on search
   useEffect(() => {
     const query = searchQuery.toLowerCase();
     const filtered = availableCourses.filter(
       (course) =>
         course.code.toLowerCase().includes(query) ||
-        course.name.toLowerCase().includes(query),
+        course.name.toLowerCase().includes(query)
     );
     setFilteredCourses(filtered);
   }, [searchQuery, availableCourses]);
+
+  // Get all transitive prerequisites for selected courses
+  const getAllPrerequisites = (courseIds: string[]): string[] => {
+    const prereqSet = new Set<string>();
+    const courseMap = new Map(availableCourses.map((c) => [c.id, c]));
+
+    const findPrereqs = (ids: string[]) => {
+      for (const id of ids) {
+        const course = courseMap.get(id);
+        if (course && course.prerequisites.length > 0) {
+          for (const prereqId of course.prerequisites) {
+            if (!prereqSet.has(prereqId)) {
+              prereqSet.add(prereqId);
+              findPrereqs([prereqId]);
+            }
+          }
+        }
+      }
+    };
+
+    findPrereqs(courseIds);
+    return Array.from(prereqSet);
+  };
 
   const handleSelectCourse = (courseId: string) => {
     setSelectedCourses((prev) =>
       prev.includes(courseId)
         ? prev.filter((id) => id !== courseId)
-        : [...prev, courseId],
+        : [...prev, courseId]
     );
   };
 
@@ -76,8 +99,8 @@ export default function IrregularCoursesModal() {
     setIsSaving(true);
     try {
       await updateProfile({
-        completedCourses: [],
         isOnboarded: true,
+        studentType: "irregular",
       });
       router.replace("/(tabs)");
     } catch (err: any) {
@@ -86,7 +109,7 @@ export default function IrregularCoursesModal() {
     }
   };
 
-  const handleContinue = async () => {
+const handleContinue = async () => {
     if (selectedCourses.length === 0) {
       setError("Please select at least one course");
       return;
@@ -94,9 +117,38 @@ export default function IrregularCoursesModal() {
 
     setIsSaving(true);
     try {
+      const allPrerequisites = getAllPrerequisites(selectedCourses);
+      const finalCourses = [...selectedCourses, ...allPrerequisites];
+      const currentSem = getCurrentSemester();
+
+      // Add selected courses + prerequisites to semesters with grades (3.00)
+      if (planState.semesters.length > 0) {
+        // Find or use first semester for current courses
+        const currentSemIndex = planState.semesters.findIndex(s =>
+          isSemesterMatching(s.term, currentSem.term)
+        );
+        const targetSemIndex = currentSemIndex >= 0 ? currentSemIndex : 0;
+        const targetSem = planState.semesters[targetSemIndex];
+
+        // Add courses to current semester with grade 3.00
+        for (const courseId of finalCourses) {
+          dispatch({
+            type: 'ADD_COURSE_TO_SEMESTER',
+            semesterId: targetSem.id,
+            courseId,
+          });
+          dispatch({
+            type: 'SET_GRADE',
+            semesterId: targetSem.id,
+            courseId,
+            grade: '3.00',
+          });
+        }
+      }
+
       await updateProfile({
-        completedCourses: selectedCourses,
         isOnboarded: true,
+        studentType: "irregular",
       });
       router.replace("/(tabs)");
     } catch (err: any) {
@@ -119,6 +171,8 @@ export default function IrregularCoursesModal() {
   }
 
   const selectedCount = selectedCourses.length;
+  const prerequisiteCount = getAllPrerequisites(selectedCourses).length;
+  const totalCount = selectedCount + prerequisiteCount;
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -133,7 +187,7 @@ export default function IrregularCoursesModal() {
             What courses have you completed?
           </Text>
           <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-            Select the courses you've already taken
+            Select the courses you've already taken - we'll auto-add prerequisites
           </Text>
         </View>
 
@@ -154,6 +208,22 @@ export default function IrregularCoursesModal() {
             </Text>
           </View>
         )}
+
+        {/* Info Banner */}
+        <View
+          style={[
+            styles.infoBanner,
+            {
+              backgroundColor: colors.accentSoft,
+              borderColor: colors.accent,
+            },
+          ]}
+        >
+          <Ionicons name="information-circle" size={18} color={colors.accent} />
+          <Text style={[styles.infoText, { color: colors.accent }]}>
+            Selected courses will be marked as currently in-progress with an auto-populated grade (3.00).
+          </Text>
+        </View>
 
         {/* Search Bar */}
         <View
@@ -235,6 +305,11 @@ export default function IrregularCoursesModal() {
                     >
                       {course.name}
                     </Text>
+                    {course.prerequisites.length > 0 && (
+                      <Text style={[styles.prereqText, { color: colors.textMuted }]}>
+                        Prereqs: {course.prerequisites.join(", ")}
+                      </Text>
+                    )}
                   </View>
                 </View>
               </Pressable>
@@ -257,9 +332,18 @@ export default function IrregularCoursesModal() {
           { backgroundColor: colors.surface, borderTopColor: colors.border },
         ]}
       >
-        <Text style={[styles.selectedCount, { color: colors.textSecondary }]}>
-          {selectedCount} course{selectedCount !== 1 ? "s" : ""} selected
-        </Text>
+        {selectedCount > 0 && (
+          <View style={styles.summaryRow}>
+            <Text style={[styles.selectedCount, { color: colors.textSecondary }]}>
+              {selectedCount} course{selectedCount !== 1 ? "s" : ""} selected
+            </Text>
+            {prerequisiteCount > 0 && (
+              <Text style={[styles.prereqCount, { color: colors.accent }]}>
+                + {prerequisiteCount} prereq{prerequisiteCount !== 1 ? "s" : ""} auto-tagged
+              </Text>
+            )}
+          </View>
+        )}
         <View style={styles.buttonsContainer}>
           <Pressable
             style={({ pressed }) => [
@@ -289,7 +373,7 @@ export default function IrregularCoursesModal() {
               <ActivityIndicator color={colors.surface} size="small" />
             ) : (
               <Text style={[styles.continueText, { color: colors.surface }]}>
-                Continue
+                Continue {totalCount > 0 ? `(${totalCount})` : ""}
               </Text>
             )}
           </Pressable>
@@ -328,6 +412,21 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
   },
   errorText: {
+    flex: 1,
+    fontSize: FontSizes.sm,
+    fontWeight: "500",
+  },
+  infoBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: Radii.md,
+    borderWidth: 1,
+    marginBottom: Spacing.md,
+    gap: Spacing.sm,
+  },
+  infoText: {
     flex: 1,
     fontSize: FontSizes.sm,
     fontWeight: "500",
@@ -380,6 +479,10 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.sm,
     lineHeight: 18,
   },
+  prereqText: {
+    fontSize: FontSizes.xs,
+    marginTop: Spacing.xs,
+  },
   emptyState: {
     alignItems: "center",
     justifyContent: "center",
@@ -395,9 +498,18 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     gap: Spacing.sm,
   },
+  summaryRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
   selectedCount: {
     fontSize: FontSizes.sm,
     fontWeight: "500",
+  },
+  prereqCount: {
+    fontSize: FontSizes.sm,
+    fontWeight: "600",
   },
   buttonsContainer: {
     flexDirection: "row",

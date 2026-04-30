@@ -7,7 +7,7 @@ import {
   signOut,
   sendPasswordResetEmail,
 } from 'firebase/auth';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
 import { auth, db } from '@/config/firebase';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -20,6 +20,9 @@ export type UserProfile = {
   program: string;
   yearLevel: number;
   createdAt: string;
+  isOnboarded?: boolean;
+  completedCourses?: string[];
+  studentType?: string;
 };
 
 type AuthState = {
@@ -40,6 +43,7 @@ type AuthContextType = AuthState & {
     program: string;
     yearLevel: number;
   }) => Promise<void>;
+  updateProfile: (updates: Partial<UserProfile>) => Promise<void>;
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   clearError: () => void;
@@ -129,6 +133,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+// ── Update Profile ──
+  const updateProfile = async (updates: Partial<UserProfile>) => {
+    if (!state.user) {
+      throw new Error("No user logged in");
+    }
+    setState((s) => ({ ...s, error: null }));
+    try {
+      const userDocRef = doc(db, "users", state.user.uid);
+      await updateDoc(userDocRef, updates);
+      // Update local state
+      setState((s) => ({
+        ...s,
+        profile: s.profile ? { ...s.profile, ...updates } : null,
+      }));
+    } catch (err: any) {
+      const message = getFirebaseErrorMessage(err.code);
+      setState((s) => ({ ...s, error: message }));
+      throw new Error(message);
+    }
+  };
+
   // ── Logout ──
   const logout = async () => {
     await signOut(auth);
@@ -149,9 +174,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setState((s) => ({ ...s, error: null }));
   };
 
-  return (
+return (
     <AuthContext.Provider
-      value={{ ...state, login, register, logout, resetPassword, clearError }}
+      value={{ ...state, login, register, updateProfile, logout, resetPassword, clearError }}
     >
       {children}
     </AuthContext.Provider>
