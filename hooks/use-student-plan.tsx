@@ -105,6 +105,14 @@ function studentPlanReducer(state: StudentPlanState, action: StudentPlanAction):
         ),
       };
     }
+    case 'SET_SEMESTER_STATUS': {
+      return {
+        ...state,
+        semesters: state.semesters.map(sem =>
+          sem.id === action.semesterId ? { ...sem, status: action.status } : sem
+        ),
+      };
+    }
     case 'ADD_TAG': {
       return { ...state, customTags: [...state.customTags, action.tag] };
     }
