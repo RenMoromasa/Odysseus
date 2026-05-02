@@ -155,7 +155,7 @@ const [themeMode, setThemeModeState] = useState(getThemeMode());
                 <View style={[styles.settingIcon, { backgroundColor: colors.accentSoft }]}>
                   <Ionicons name="moon" size={18} color={colors.accent} />
                 </View>
-                <Text style={[styles.settingLabel, { color: colors.text }]}>Dark Mode</Text>
+                <Text style={[styles.settingLabel, { color: colors.text }]}>Choose Mode</Text>
               </View>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <Text style={[styles.settingHint, { color: colors.textMuted }]}>

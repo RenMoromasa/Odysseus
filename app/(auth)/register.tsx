@@ -94,7 +94,7 @@ export default function RegisterScreen() {
     setErrors({});
     setIsLoading(true);
     try {
-      await register({
+await register({
         firstName: firstName.trim(),
         lastName: lastName.trim(),
         email: email.trim(),
@@ -103,7 +103,7 @@ export default function RegisterScreen() {
         program: selectedProgram,
         yearLevel: selectedYearLevel,
       });
-      router.replace('/(tabs)');
+      // Don't manually redirect - let AuthGate in _layout.tsx handle the flow
     } catch (err: any) {
       setErrors({ general: err.message });
     } finally {
@@ -147,14 +147,7 @@ export default function RegisterScreen() {
               <Ionicons name="arrow-back" size={24} color="rgba(255,255,255,0.8)" />
             </Pressable>
 
-            {/* App Logo */}
-            <View style={styles.logoContainer}>
-              <Image
-                source={require('@/assets/images/logo.png')}
-                style={styles.logo}
-                contentFit="contain"
-              />
-            </View>
+
           </View>
 
           {/* ── Bottom: White Card with Register Form ──────────────── */}

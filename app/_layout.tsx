@@ -16,7 +16,7 @@ export const unstable_settings = {
 
 // ─── Auth-aware navigation guard ─────────────────────────────────────────────
 function AuthGate({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
+  const { user, profile, loading } = useAuth();
   const segments = useSegments();
   const router = useRouter();
 
@@ -24,15 +24,26 @@ function AuthGate({ children }: { children: React.ReactNode }) {
     if (loading) return;
 
     const inAuthGroup = segments[0] === '(auth)';
+    const inModalsGroup = segments[0] === '(modals)';
 
     if (!user && !inAuthGroup) {
       // Not logged in and trying to access protected routes — redirect to welcome
       router.replace('/(auth)/welcome');
-    } else if (user && inAuthGroup) {
-      // Logged in but on auth screens — redirect to main app
-      router.replace('/(tabs)');
+} else if (user && inAuthGroup) {
+      // Logged in but on auth screens
+      // Check if user needs to complete onboarding (first time or not onboarded)
+      if (profile && !profile.isOnboarded) {
+        // Show student type selection modal for first-time setup
+        router.replace('/(modals)/student-type-modal');
+      } else {
+        // User completed onboarding — redirect to main app
+        router.replace('/(tabs)');
+      }
+    } else if (user && !inModalsGroup && profile && !profile.isOnboarded) {
+      // User is on tabs but hasn't completed onboarding — redirect to student type
+      router.replace('/(modals)/student-type-modal');
     }
-  }, [user, loading, segments]);
+  }, [user, profile, loading, segments]);
 
   if (loading) {
     return (

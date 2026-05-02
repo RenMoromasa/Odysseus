@@ -23,6 +23,11 @@ export default function DashboardScreen() {
   const currentSemester = state.semesters.find(s => s.status === 'in-progress');
   const completedSemesters = state.semesters.filter(s => s.status === 'completed');
 
+  // Check if there are auto-graded courses (grade 3.00)
+  const hasAutoGradedCourses = state.semesters.some(sem =>
+    sem.courses.some(c => c.grade === '3.00')
+  );
+
   // Find prerequisite conflicts in current and planned semesters
   const conflicts = useMemo(() => {
     const result: { courseId: string; semesterId: string; missing: string[] }[] = [];
@@ -66,6 +71,19 @@ export default function DashboardScreen() {
             <Ionicons name="person" size={22} color={colors.accent} />
           </Pressable>
         </View>
+
+        {/* Auto-Grade Warning */}
+        {hasAutoGradedCourses && (
+          <View style={[styles.warningBanner, { backgroundColor: colors.warningSoft, borderColor: colors.warning }]}>
+            <Ionicons name="alert-circle" size={18} color={colors.warning} />
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.warningTitle, { color: colors.warning }]}>Auto-populated grades</Text>
+              <Text style={[styles.warningText, { color: colors.textSecondary }]}>
+                Grades were automatically set to 3.00 during setup. Update them as you complete your courses.
+              </Text>
+            </View>
+          </View>
+        )}
 
         {/* GPA Card */}
         <GlassCard style={styles.gpaCard}>
@@ -244,6 +262,18 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center', borderWidth: 1.5,
   },
   gpaCard: { alignItems: 'center', paddingVertical: Spacing.xl, marginBottom: Spacing.lg },
+  warningBanner: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.md,
+    borderRadius: Radii.md,
+    borderWidth: 1,
+    marginBottom: Spacing.lg,
+    gap: Spacing.md,
+  },
+  warningTitle: { fontSize: FontSizes.sm, fontWeight: '600', marginBottom: 2 },
+  warningText: { fontSize: FontSizes.xs, lineHeight: 16 },
   gpaStats: {
     flexDirection: 'row', alignItems: 'center',
     marginTop: Spacing.lg, gap: Spacing.md,

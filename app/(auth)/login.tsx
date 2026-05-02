@@ -1,7 +1,6 @@
 import { FontSizes, Radii, Spacing } from '@/constants/theme';
 import { useAuth } from '@/hooks/use-auth';
 import { Ionicons } from '@expo/vector-icons';
-import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
@@ -82,14 +81,7 @@ export default function LoginScreen() {
             >
               <Ionicons name="arrow-back" size={24} color="rgba(255,255,255,0.8)" />
             </Pressable>
-            {/* App Logo */}
-            <View style={styles.logoContainer}>
-              <Image
-                source={require('@/assets/images/logo.png')}
-                style={styles.logo}
-                contentFit="contain"
-              />
-            </View>
+
           </View>
           {/* ── Bottom: White Card with Login Form ─────────────────── */}
           <View style={styles.bottomCard}>
@@ -192,8 +184,9 @@ export default function LoginScreen() {
             {/* Register link */}
             <View style={styles.bottomLink}>
               <Text style={styles.bottomLinkText}>Don't have an account? </Text>
-              <Pressable onPress={() => router.back()}>
+              <Pressable onPress={() => router.push('/(auth)/register')}>
                 <Text style={styles.bottomLinkAction}>Register</Text>
+                
               </Pressable>
             </View>
           </View>

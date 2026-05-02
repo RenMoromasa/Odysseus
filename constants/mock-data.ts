@@ -1,14 +1,14 @@
+import { TagColors } from './theme';
 import { Course, Semester, StudentInfo, StudentPlanState, Tag } from './types';
 
 // ─── Default Tags ──────────────────────────────────────────────────────────────
 export const DEFAULT_TAGS: Tag[] = [
-  { id: 'coreMajor', name: 'Core Major', color: '#7C6AFF', isDefault: true },
-  { id: 'freeElective', name: 'Free Elective', color: '#F472B6', isDefault: true },
-  { id: 'profElective', name: 'Professional Elective', color: '#A78BFA', isDefault: true },
-  { id: 'genEd', name: 'General Education', color: '#4ECDC4', isDefault: true },
-  { id: 'thesis', name: 'Thesis/Capstone', color: '#FFD166', isDefault: true },
-  { id: 'peNstp', name: 'PE / NSTP', color: '#94A3B8', isDefault: true },
-  { id: 'religion', name: 'Religion', color: '#F59E0B', isDefault: true },
+  { id: 'coreMajor', name: 'Core Major', color: TagColors.coreMajor, isDefault: true },
+  { id: 'freeElective', name: 'Free Elective', color: TagColors.freeElective, isDefault: true },
+  { id: 'profElective', name: 'Professional Elective', color: TagColors.profElective, isDefault: true },
+  { id: 'genEd', name: 'General Education', color: TagColors.genEd, isDefault: true },
+  { id: 'thesis', name: 'Thesis/Capstone', color: TagColors.thesis, isDefault: true },
+  { id: 'peNstp', name: 'PE / NSTP', color: TagColors.peNstp, isDefault: true },
 ];
 
 // ─── BS Computer Science — Course Catalog ──────────────────────────────────────
@@ -641,7 +641,7 @@ const IT_SPECIFIC_COURSES: Course[] = [
     credits: 3, prerequisites: [], tags: ['profElective'],
   },
   {
-    id: 'IT3104N', code: 'IT 3104N', name: 'Information Assurance and Security',
+    id: 'IT3104A', code: 'IT 3104A', name: 'Information Assurance and Security',
     description: 'Cybersecurity fundamentals, cryptography, network security, and risk management.',
     credits: 3, prerequisites: ['CIS1205'], tags: ['coreMajor'],
   },

@@ -8,7 +8,6 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useStudentPlan } from '@/hooks/use-student-plan';
 import { AppColors, Spacing, FontSizes, Radii, TagColors } from '@/constants/theme';
 import { Tag } from '@/constants/types';
-import { DEFAULT_TAGS } from '@/constants/mock-data';
 
 const PRESET_COLORS = [
   '#7C6AFF', '#F472B6', '#38BDF8', '#A78BFA', '#4ECDC4',
