@@ -15,11 +15,30 @@ export default function DashboardScreen() {
   const colors = AppColors[scheme];
   const router = useRouter();
   const {
-    state, getCourse, getTagById, calculateGPA,
+    state, catalog, getCourse, getTagById, calculateGPA,
     checkPrerequisiteConflicts, isCourseCompleted,
   } = useStudentPlan();
 
   const gpaData = calculateGPA();
+
+  // Lacking courses summary
+  const lackingSummary = useMemo(() => {
+    const passedIds = new Set<string>();
+    for (const sem of state.semesters) {
+      for (const sc of sem.courses) {
+        if (sc.grade && sc.grade !== '5.00') passedIds.add(sc.courseId);
+      }
+    }
+    let ready = 0;
+    let blocked = 0;
+    for (const course of catalog) {
+      if (passedIds.has(course.id)) continue;
+      const allPrereqsMet = course.prerequisites.every(id => passedIds.has(id));
+      if (allPrereqsMet) ready++;
+      else blocked++;
+    }
+    return { total: ready + blocked, ready, blocked };
+  }, [catalog, state.semesters]);
   const currentSemester = state.semesters.find(s => s.status === 'in-progress');
   const completedSemesters = state.semesters.filter(s => s.status === 'completed');
 
@@ -91,12 +110,12 @@ export default function DashboardScreen() {
           <View style={styles.gpaStats}>
             <View style={styles.gpaStat}>
               <Text style={[styles.gpaStatValue, { color: colors.text }]}>{gpaData.completedCredits}</Text>
-              <Text style={[styles.gpaStatLabel, { color: colors.textMuted }]}>Credits Done</Text>
+              <Text style={[styles.gpaStatLabel, { color: colors.textMuted }]}>Units Done</Text>
             </View>
             <View style={[styles.gpaDivider, { backgroundColor: colors.border }]} />
             <View style={styles.gpaStat}>
               <Text style={[styles.gpaStatValue, { color: colors.text }]}>{gpaData.totalCredits}</Text>
-              <Text style={[styles.gpaStatLabel, { color: colors.textMuted }]}>Total Credits</Text>
+              <Text style={[styles.gpaStatLabel, { color: colors.textMuted }]}>Total Units</Text>
             </View>
             <View style={[styles.gpaDivider, { backgroundColor: colors.border }]} />
             <View style={styles.gpaStat}>
@@ -105,6 +124,78 @@ export default function DashboardScreen() {
             </View>
           </View>
         </GlassCard>
+
+        {/* Graduation Progress Card */}
+        <Pressable
+          onPress={() => lackingSummary.total > 0 ? router.push('/(modals)/lacking-courses-modal') : null}
+          style={({ pressed }) => [lackingSummary.total > 0 && pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] }]}
+        >
+          <GlassCard style={styles.gradCard}>
+            {/* Title row */}
+            <View style={styles.gradHeader}>
+              <View style={styles.gradLeft}>
+                <Ionicons name="school" size={18} color={colors.accent} />
+                <Text style={[styles.gradTitle, { color: colors.text }]}>Graduation Progress</Text>
+              </View>
+              {lackingSummary.total > 0 && (
+                <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+              )}
+            </View>
+
+            {/* Units progress bar */}
+            <View style={styles.gradUnitsRow}>
+              <Text style={[styles.gradUnitsLabel, { color: colors.textSecondary }]}>Units</Text>
+              <Text style={[styles.gradUnitsValue, { color: colors.accent }]}>
+                {gpaData.completedCredits} / {gpaData.totalCredits}
+              </Text>
+            </View>
+            <View style={[styles.gradTrack, { backgroundColor: colors.surfaceLight }]}>
+              <View style={[styles.gradFill, {
+                backgroundColor: colors.accent,
+                width: `${progressPercent}%` as any,
+              }]} />
+            </View>
+
+            {/* Course breakdown row */}
+            {lackingSummary.total > 0 && (
+              <>
+                <View style={[styles.gradDivider, { backgroundColor: colors.border }]} />
+                <View style={styles.gradCoursesRow}>
+                  <Text style={[styles.gradCoursesLabel, { color: colors.textSecondary }]}>
+                    Courses remaining
+                  </Text>
+                  <Text style={[styles.gradCoursesValue, { color: colors.text }]}>
+                    {lackingSummary.total}
+                  </Text>
+                </View>
+                <View style={[styles.gradTrack, { backgroundColor: colors.surfaceLight }]}>
+                  <View style={[styles.gradFill, {
+                    backgroundColor: colors.accent,
+                    flex: lackingSummary.ready,
+                  }]} />
+                  <View style={[styles.gradFill, {
+                    backgroundColor: colors.warning,
+                    flex: lackingSummary.blocked,
+                  }]} />
+                </View>
+                <View style={styles.gradLegend}>
+                  <View style={styles.gradLegendItem}>
+                    <View style={[styles.gradLegendDot, { backgroundColor: colors.accent }]} />
+                    <Text style={[styles.gradLegendText, { color: colors.textMuted }]}>
+                      {lackingSummary.ready} ready
+                    </Text>
+                  </View>
+                  <View style={styles.gradLegendItem}>
+                    <View style={[styles.gradLegendDot, { backgroundColor: colors.warning }]} />
+                    <Text style={[styles.gradLegendText, { color: colors.textMuted }]}>
+                      {lackingSummary.blocked} blocked
+                    </Text>
+                  </View>
+                </View>
+              </>
+            )}
+          </GlassCard>
+        </Pressable>
 
         {/* Current Semester */}
         {currentSemester && (
@@ -156,7 +247,7 @@ export default function DashboardScreen() {
               });
               return (
                 <ConflictAlert
-                  key={conflict.courseId}
+                  key={`${conflict.semesterId}-${conflict.courseId}`}
                   courseCode={course.code}
                   missingPrereqs={missingNames}
                   onPress={() => router.push({
@@ -215,7 +306,7 @@ export default function DashboardScreen() {
                     <View style={styles.completedInfo}>
                       <Text style={[styles.completedLabel, { color: colors.text }]}>{sem.label}</Text>
                       <Text style={[styles.completedMeta, { color: colors.textMuted }]}>
-                        {sem.courses.length} courses · {credits} credits
+                        {sem.courses.length} courses · {credits} units
                       </Text>
                     </View>
                   </View>
@@ -261,7 +352,37 @@ const styles = StyleSheet.create({
     width: 44, height: 44, borderRadius: 22,
     alignItems: 'center', justifyContent: 'center', borderWidth: 1.5,
   },
-  gpaCard: { alignItems: 'center', paddingVertical: Spacing.xl, marginBottom: Spacing.lg },
+  gpaCard: { alignItems: 'center', paddingVertical: Spacing.xl, marginBottom: Spacing.sm },
+  // Graduation Progress card
+  gradCard: { marginBottom: Spacing.lg },
+  gradHeader: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    marginBottom: Spacing.md,
+  },
+  gradLeft: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
+  gradTitle: { fontSize: FontSizes.sm, fontWeight: '700' },
+  gradUnitsRow: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    marginBottom: 6,
+  },
+  gradUnitsLabel: { fontSize: FontSizes.xs, fontWeight: '500' },
+  gradUnitsValue: { fontSize: FontSizes.md, fontWeight: '800' },
+  gradTrack: {
+    height: 8, borderRadius: 4, overflow: 'hidden', flexDirection: 'row',
+    marginBottom: Spacing.xs,
+  },
+  gradFill: { height: '100%' },
+  gradDivider: { height: StyleSheet.hairlineWidth, marginVertical: Spacing.sm },
+  gradCoursesRow: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    marginBottom: 6,
+  },
+  gradCoursesLabel: { fontSize: FontSizes.xs, fontWeight: '500' },
+  gradCoursesValue: { fontSize: FontSizes.md, fontWeight: '800' },
+  gradLegend: { flexDirection: 'row', gap: Spacing.lg, marginTop: 2 },
+  gradLegendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  gradLegendDot: { width: 8, height: 8, borderRadius: 4 },
+  gradLegendText: { fontSize: FontSizes.xs, fontWeight: '500' },
   warningBanner: {
     flexDirection: 'row',
     alignItems: 'flex-start',

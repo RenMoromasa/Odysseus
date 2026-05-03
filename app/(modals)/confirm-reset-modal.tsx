@@ -1,20 +1,30 @@
-import React from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, Pressable, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useStudentPlan } from '@/hooks/use-student-plan';
 import { AppColors, Spacing, FontSizes, Radii } from '@/constants/theme';
+import { fetchSemesterTemplate } from '@/services/catalog';
 
 export default function ConfirmResetModal() {
   const scheme = useColorScheme() ?? 'dark';
   const colors = AppColors[scheme];
   const router = useRouter();
-  const { dispatch } = useStudentPlan();
+  const { state, dispatch } = useStudentPlan();
+  const [resetting, setResetting] = useState(false);
 
-  const handleReset = () => {
-    dispatch({ type: 'RESET_PLAN' });
-    router.back();
+  const handleReset = async () => {
+    setResetting(true);
+    try {
+      const freshSemesters = await fetchSemesterTemplate(state.studentInfo.program);
+      dispatch({ type: 'RESET_PLAN', semesters: freshSemesters });
+    } catch (err) {
+      console.error('Failed to reset plan:', err);
+    } finally {
+      setResetting(false);
+      router.back();
+    }
   };
 
   return (

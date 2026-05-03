@@ -16,7 +16,14 @@ export function programIdFor(programName: string): string {
 
 export async function fetchCourseCatalog(programName: string): Promise<Course[]> {
   const snap = await getDocs(collection(db, 'programs', programIdFor(programName), 'courses'));
-  return snap.docs.map((d) => d.data() as Course);
+  const courses = snap.docs.map((d) => d.data() as Course);
+  // Deduplicate by course ID (safety net)
+  const seen = new Set<string>();
+  return courses.filter(c => {
+    if (seen.has(c.id)) return false;
+    seen.add(c.id);
+    return true;
+  });
 }
 
 export async function fetchSemesterTemplate(programName: string): Promise<Semester[]> {

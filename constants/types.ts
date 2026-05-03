@@ -72,4 +72,4 @@ export type StudentPlanAction =
   | { type: 'DELETE_TAG'; tagId: string }
   | { type: 'SET_STUDENT_INFO'; studentInfo: StudentInfo }
   | { type: 'SET_PROGRAM'; program: string; semesters: Semester[] }
-  | { type: 'RESET_PLAN' };
+  | { type: 'RESET_PLAN'; semesters: Semester[] };
