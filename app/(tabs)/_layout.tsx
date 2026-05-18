@@ -60,6 +60,15 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="lacking"
+        options={{
+          title: 'Lacking',
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons size={24} name={focused ? 'alert-circle' : 'alert-circle-outline'} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="profile"
         options={{
           title: 'Profile',

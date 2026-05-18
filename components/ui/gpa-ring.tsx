@@ -1,3 +1,12 @@
+/**
+ * GPARing — Animated progress ring
+ *
+ * Rebuilt using a stroke-dasharray SVG-style approach emulated with pure
+ * React Native Views. Two half-circle "sectors" (right, then left) are
+ * revealed progressively via animated rotation, with overflow:hidden clipping.
+ *
+ * This pattern is robust on both the old and Fabric (new) architectures.
+ */
 import { AppColors, FontSizes } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import React, { useEffect } from 'react';
@@ -18,10 +27,18 @@ interface GPARingProps {
   label?: string;
 }
 
-export function GPARing({ gpa, maxGPA = 5.0, size = 150, strokeWidth = 10, label = 'Current GPA' }: GPARingProps) {
+export function GPARing({
+  gpa,
+  maxGPA = 5.0,
+  size = 150,
+  strokeWidth = 12,
+  label = 'Current GPA',
+}: GPARingProps) {
   const scheme = useColorScheme() ?? 'dark';
   const colors = AppColors[scheme];
-  const progress = Math.min(gpa / maxGPA, 1);
+
+  // progress 0–1
+  const progress = Math.min(Math.max(gpa / maxGPA, 0), 1);
   const animatedProgress = useSharedValue(0);
 
   useEffect(() => {
@@ -29,80 +46,117 @@ export function GPARing({ gpa, maxGPA = 5.0, size = 150, strokeWidth = 10, label
       300,
       withTiming(progress, { duration: 1200, easing: Easing.out(Easing.cubic) })
     );
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [progress]);
 
-  // Ring is built with two half-circle clipping containers
+  const ringColor = getGPAColor(gpa, colors);
+  const radius = size / 2;
   const innerSize = size - strokeWidth * 2;
-  const halfSize = size / 2;
 
-  const rightHalfStyle = useAnimatedStyle(() => {
+  // ── Right half: revealed from 0° → 180° ─────────────────────────────────
+  const rightStyle = useAnimatedStyle(() => {
     const deg = Math.min(animatedProgress.value * 360, 180);
     return { transform: [{ rotate: `${deg}deg` }] };
   });
 
-  const leftHalfStyle = useAnimatedStyle(() => {
-    const deg = Math.max((animatedProgress.value * 360) - 180, 0);
+  // ── Left half: revealed from 0° → 180° (but only after right is done) ──
+  const leftStyle = useAnimatedStyle(() => {
+    const deg = Math.max(animatedProgress.value * 360 - 180, 0);
     return { transform: [{ rotate: `${deg}deg` }] };
   });
 
-const getGPAColor = () => {
-    if (gpa <= 1.50) return colors.success;
-    if (gpa <= 2.00) return colors.accent;
-    if (gpa <= 2.50) return colors.secondary;
-    if (gpa <= 3.00) return colors.warning;
-    return colors.danger;
-  };
-
-  const ringColor = getGPAColor();
-
   return (
-    <View style={[styles.container, { width: size, height: size }]}>
-      {/* Background ring */}
-      <View style={[
-        styles.ring,
-        {
-          width: size, height: size, borderRadius: halfSize,
-          borderWidth: strokeWidth, borderColor: colors.border,
-        },
-      ]} />
-
-      {/* Right half clip */}
-      <View style={[styles.halfClip, { width: halfSize, height: size, left: halfSize }]}>
-        <Animated.View style={[
-          styles.halfRing,
+    <View style={{ width: size, height: size, alignSelf: 'center' }}>
+      {/* ── Background track ── */}
+      <View
+        style={[
+          styles.abs,
           {
-            width: size, height: size, borderRadius: halfSize,
-            borderWidth: strokeWidth, borderColor: ringColor,
-            left: -halfSize,
+            width: size,
+            height: size,
+            borderRadius: radius,
+            borderWidth: strokeWidth,
+            borderColor: colors.border,
           },
-          rightHalfStyle,
-        ]} />
+        ]}
+      />
+
+      {/* ── Right half sector ── */}
+      {/* Clip container: right half of the circle */}
+      <View
+        style={[
+          styles.abs,
+          styles.halfClip,
+          { width: radius, height: size, left: radius },
+        ]}
+      >
+        {/* Full-circle ring rotated from the left edge of the clip */}
+        <Animated.View
+          style={[
+            styles.abs,
+            {
+              width: size,
+              height: size,
+              borderRadius: radius,
+              borderWidth: strokeWidth,
+              borderColor: ringColor,
+              // Hide the left half of the ring so only the right arc shows
+              borderLeftColor: 'transparent',
+              borderBottomColor: 'transparent',
+              left: -radius,
+              // Rotate around the centre of the full circle (= right edge of clip = left: -radius)
+              transformOrigin: `${radius}px ${radius}px`,
+            },
+            rightStyle,
+          ]}
+        />
       </View>
 
-      {/* Left half clip */}
-      <View style={[styles.halfClip, { width: halfSize, height: size, left: 0 }]}>
-        <Animated.View style={[
-          styles.halfRing,
-          {
-            width: size, height: size, borderRadius: halfSize,
-            borderWidth: strokeWidth, borderColor: ringColor,
-            left: 0,
-          },
-          leftHalfStyle,
-        ]} />
+      {/* ── Left half sector ── */}
+      <View
+        style={[
+          styles.abs,
+          styles.halfClip,
+          { width: radius, height: size, left: 0 },
+        ]}
+      >
+        <Animated.View
+          style={[
+            styles.abs,
+            {
+              width: size,
+              height: size,
+              borderRadius: radius,
+              borderWidth: strokeWidth,
+              borderColor: ringColor,
+              // Hide the right half of the ring so only the left arc shows
+              borderRightColor: 'transparent',
+              borderTopColor: 'transparent',
+              left: 0,
+              transformOrigin: `${radius}px ${radius}px`,
+            },
+            leftStyle,
+          ]}
+        />
       </View>
 
-      {/* Center content */}
-      <View style={[
-        styles.center,
-        {
-          width: innerSize, height: innerSize, borderRadius: innerSize / 2,
-          top: strokeWidth, left: strokeWidth,
-          backgroundColor: colors.surface,
-        },
-      ]}>
+      {/* ── Centre info ── */}
+      <View
+        style={[
+          styles.abs,
+          styles.center,
+          {
+            width: innerSize,
+            height: innerSize,
+            borderRadius: innerSize / 2,
+            top: strokeWidth,
+            left: strokeWidth,
+            backgroundColor: colors.surface,
+          },
+        ]}
+      >
         <Text style={[styles.gpaValue, { color: ringColor }]}>
-          {gpa.toFixed(2)}
+          {gpa === 0 ? '—' : gpa.toFixed(2)}
         </Text>
         <Text style={[styles.gpaLabel, { color: colors.textSecondary }]}>
           {label}
@@ -115,25 +169,23 @@ const getGPAColor = () => {
   );
 }
 
+// ── helpers ─────────────────────────────────────────────────────────────────
+function getGPAColor(gpa: number, colors: ReturnType<typeof getColors>) {
+  if (gpa === 0)    return colors.textMuted;
+  if (gpa <= 1.50)  return colors.success;
+  if (gpa <= 2.00)  return colors.accent;
+  if (gpa <= 2.50)  return colors.secondary;
+  if (gpa <= 3.00)  return colors.warning;
+  return colors.danger;
+}
+
+// Just a type helper so TS can infer the colors object shape
+function getColors(c: any) { return c; }
+
 const styles = StyleSheet.create({
-  container: {
-    position: 'relative',
-    alignSelf: 'center',
-  },
-  ring: {
-    position: 'absolute',
-  },
-  halfClip: {
-    position: 'absolute',
-    overflow: 'hidden',
-  },
-  halfRing: {
-    position: 'absolute',
-    borderLeftColor: 'transparent',
-    borderBottomColor: 'transparent',
-  },
+  abs: { position: 'absolute' },
+  halfClip: { overflow: 'hidden' },
   center: {
-    position: 'absolute',
     alignItems: 'center',
     justifyContent: 'center',
   },

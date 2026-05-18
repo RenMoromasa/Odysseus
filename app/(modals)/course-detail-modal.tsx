@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
+  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -29,6 +30,7 @@ export default function CourseDetailModal() {
   const semester = getCourseSemester(courseId ?? '');
   const [gradeInput, setGradeInput] = useState<string>(grade ?? '');
   const [gradeError, setGradeError] = useState<string>('');
+  const [gradeSaved, setGradeSaved] = useState(false);
 
   if (!course) {
     return (
@@ -52,6 +54,7 @@ export default function CourseDetailModal() {
     setGradeInput(formatted);
     setGradeError('');
     dispatch({ type: 'SET_GRADE', semesterId: semester.id, courseId: course.id, grade: formatted });
+    setGradeSaved(true);
   };
 
   const handleRemoveCourse = () => {
@@ -69,16 +72,14 @@ export default function CourseDetailModal() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        {/* Header */}
-        <View style={styles.headerRow}>
-          <Pressable onPress={() => router.back()} hitSlop={12}>
-            <Ionicons name="close-circle" size={32} color={colors.textMuted} />
-          </Pressable>
-        </View>
-
-        {/* Course identity */}
+        {/* Course identity — close button lives on the same row as the course code */}
         <View style={[styles.identity, { borderColor: tag?.color ?? colors.accent }]}>
-          <Text style={[styles.code, { color: tag?.color ?? colors.accent }]}>{course.code}</Text>
+          <View style={styles.codeRow}>
+            <Text style={[styles.code, { color: tag?.color ?? colors.accent }]}>{course.code}</Text>
+            <Pressable onPress={() => router.back()} hitSlop={12}>
+              <Ionicons name="close-circle" size={28} color={colors.textMuted} />
+            </Pressable>
+          </View>
           <Text style={[styles.name, { color: colors.text }]}>{course.name}</Text>
           <View style={styles.badges}>
             {tag && <TagBadge name={tag.name} color={tag.color} size="md" />}
@@ -238,6 +239,43 @@ export default function CourseDetailModal() {
           )}
         </View>
       </ScrollView>
+
+      {/* ── Grade Saved Confirmation Modal ──────────────────────────────── */}
+      <Modal
+        visible={gradeSaved}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setGradeSaved(false)}
+      >
+        <Pressable
+          style={styles.savedOverlay}
+          onPress={() => setGradeSaved(false)}
+        >
+          <Pressable style={[styles.savedCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            {/* Icon */}
+            <View style={[styles.savedIconWrap, { backgroundColor: colors.successSoft }]}>
+              <Ionicons name="checkmark-circle" size={40} color={colors.success} />
+            </View>
+
+            {/* Text */}
+            <Text style={[styles.savedTitle, { color: colors.text }]}>Grade Saved!</Text>
+            <Text style={[styles.savedSubtitle, { color: colors.textSecondary }]}>
+              Your grade for{' '}
+              <Text style={{ fontWeight: '700', color: colors.text }}>{course.code}</Text>
+              {' '}has been recorded as{' '}
+              <Text style={{ fontWeight: '800', color: colors.success }}>{gradeInput}</Text>.
+            </Text>
+
+            {/* Confirm button */}
+            <Pressable
+              style={[styles.savedBtn, { backgroundColor: colors.accent }]}
+              onPress={() => setGradeSaved(false)}
+            >
+              <Text style={styles.savedBtnText}>Got it</Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -246,10 +284,14 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   scroll: { padding: Spacing.lg },
   errorText: { fontSize: FontSizes.md, textAlign: 'center', marginTop: Spacing.xxl },
-  headerRow: { flexDirection: 'row', justifyContent: 'flex-end', marginBottom: Spacing.md },
   identity: {
     paddingBottom: Spacing.lg, marginBottom: Spacing.lg,
     borderBottomWidth: 2,
+    paddingTop: Spacing.xl + Spacing.md,
+  },
+  codeRow: {
+    flexDirection: 'row', alignItems: 'center',
+    justifyContent: 'space-between', marginBottom: Spacing.xs,
   },
   code: { fontSize: FontSizes.sm, fontWeight: '700', letterSpacing: 1, textTransform: 'uppercase' },
   name: { fontSize: FontSizes.xxl, fontWeight: '800', marginTop: Spacing.xs, lineHeight: 34 },
@@ -332,4 +374,30 @@ const styles = StyleSheet.create({
   },
   gradeErrorText: { fontSize: FontSizes.xs, marginTop: Spacing.xs },
   gradeHint: { fontSize: FontSizes.xs, marginTop: Spacing.xs },
+
+  // Grade saved modal
+  savedOverlay: {
+    flex: 1, backgroundColor: 'rgba(0,0,0,0.55)',
+    justifyContent: 'center', alignItems: 'center', padding: Spacing.lg,
+  },
+  savedCard: {
+    width: '100%', borderRadius: Radii.xl, borderWidth: 1,
+    padding: Spacing.xl, alignItems: 'center', gap: Spacing.md,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.35, shadowRadius: 16, elevation: 12,
+  },
+  savedIconWrap: {
+    width: 72, height: 72, borderRadius: 36,
+    alignItems: 'center', justifyContent: 'center',
+    marginBottom: Spacing.xs,
+  },
+  savedTitle: { fontSize: FontSizes.xl, fontWeight: '800' },
+  savedSubtitle: {
+    fontSize: FontSizes.md, textAlign: 'center', lineHeight: 22,
+  },
+  savedBtn: {
+    marginTop: Spacing.sm, width: '100%', alignItems: 'center',
+    paddingVertical: Spacing.md, borderRadius: Radii.md,
+  },
+  savedBtnText: { color: '#FFF', fontWeight: '700', fontSize: FontSizes.md },
 });

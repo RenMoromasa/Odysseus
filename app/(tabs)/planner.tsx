@@ -8,6 +8,8 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useStudentPlan } from '@/hooks/use-student-plan';
 import { AppColors, Spacing, FontSizes, Radii } from '@/constants/theme';
 import { TagBadge } from '@/components/ui/tag-badge';
+import { ScrollFade } from '@/components/ui/scroll-fade';
+import { TabEnterAnimation } from '@/components/ui/tab-enter-animation';
 
 export default function PlannerScreen() {
   const scheme = useColorScheme() ?? 'dark';
@@ -162,7 +164,7 @@ export default function PlannerScreen() {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <TabEnterAnimation style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar barStyle={scheme === 'dark' ? 'light-content' : 'dark-content'} />
       <ScrollView
         contentContainerStyle={styles.scroll}
@@ -482,7 +484,10 @@ export default function PlannerScreen() {
           </Pressable>
         </Pressable>
       </Modal>
-    </View>
+
+      {/* Scroll-fade overlay */}
+      <ScrollFade color={colors.background} />
+    </TabEnterAnimation>
   );
 }
 

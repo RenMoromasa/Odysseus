@@ -1,7 +1,9 @@
 import { GlassCard } from '@/components/ui/glass-card';
+import { ScrollFade } from '@/components/ui/scroll-fade';
+import { TabEnterAnimation } from '@/components/ui/tab-enter-animation';
 import { AppColors, FontSizes, Radii, Spacing } from '@/constants/theme';
-import { getThemeMode, setThemeMode, useColorScheme } from '@/hooks/use-color-scheme';
 import { useAuth } from '@/hooks/use-auth';
+import { getThemeMode, setThemeMode, useColorScheme } from '@/hooks/use-color-scheme';
 import { useStudentPlan } from '@/hooks/use-student-plan';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -49,7 +51,7 @@ export default function ProfileScreen() {
     ? Math.round((gpaData.completedCredits / gpaData.totalCredits) * 100)
     : 0;
 
-const [themeMode, setThemeModeState] = useState(getThemeMode());
+  const [themeMode, setThemeModeState] = useState(getThemeMode());
 
   const cycleTheme = () => {
     const modes: Array<'light' | 'dark' | 'system'> = ['system', 'dark', 'light'];
@@ -63,7 +65,7 @@ const [themeMode, setThemeModeState] = useState(getThemeMode());
 
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <TabEnterAnimation style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar barStyle={scheme === 'dark' ? 'light-content' : 'dark-content'} />
       <ScrollView
         contentContainerStyle={styles.scroll}
@@ -71,7 +73,7 @@ const [themeMode, setThemeModeState] = useState(getThemeMode());
       >
         {/* Header */}
         <View style={styles.header}>
-          <Text style={[styles.title, { color: colors.text }]}>Profile</Text>
+          <Text style={[styles.title, { color: colors.text }]}>Profile Overview</Text>
         </View>
 
         {/* Student Card */}
@@ -143,7 +145,7 @@ const [themeMode, setThemeModeState] = useState(getThemeMode());
           </GlassCard>
         </View>
 
-      {/* Settings */}
+        {/* Settings */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Settings</Text>
           <GlassCard noPadding>
@@ -220,7 +222,10 @@ const [themeMode, setThemeModeState] = useState(getThemeMode());
 
         <View style={{ height: 100 }} />
       </ScrollView>
-    </View>
+
+      {/* Scroll-fade overlay */}
+      <ScrollFade color={colors.background} />
+    </TabEnterAnimation>
   );
 }
 

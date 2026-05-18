@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, StatusBar } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -6,9 +6,11 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useStudentPlan } from '@/hooks/use-student-plan';
 import { AppColors, Spacing, FontSizes, Radii } from '@/constants/theme';
 import { GlassCard } from '@/components/ui/glass-card';
-import { GPARing } from '@/components/ui/gpa-ring';
-import { CourseCard } from '@/components/ui/course-card';
 import { ConflictAlert } from '@/components/ui/conflict-alert';
+import { CourseCard } from '@/components/ui/course-card';
+import { GPARing } from '@/components/ui/gpa-ring';
+import { ScrollFade } from '@/components/ui/scroll-fade';
+import { TabEnterAnimation } from '@/components/ui/tab-enter-animation';
 
 export default function DashboardScreen() {
   const scheme = useColorScheme() ?? 'dark';
@@ -20,6 +22,14 @@ export default function DashboardScreen() {
   } = useStudentPlan();
 
   const gpaData = calculateGPA();
+
+  // ── Live time-of-day greeting ──────────────────────────────────────────────
+  const [greeting, setGreeting] = useState(() => getTimeOfDay());
+  useEffect(() => {
+    // Re-check every minute in case the user keeps the app open across hours
+    const id = setInterval(() => setGreeting(getTimeOfDay()), 60_000);
+    return () => clearInterval(id);
+  }, []);
 
   // Lacking courses summary
   const lackingSummary = useMemo(() => {
@@ -67,7 +77,7 @@ export default function DashboardScreen() {
     : 0;
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <TabEnterAnimation style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar barStyle={scheme === 'dark' ? 'light-content' : 'dark-content'} />
       <ScrollView
         contentContainerStyle={styles.scroll}
@@ -77,7 +87,7 @@ export default function DashboardScreen() {
         <View style={styles.header}>
           <View>
             <Text style={[styles.greeting, { color: colors.textSecondary }]}>
-              Good {getTimeOfDay()},
+              Good {greeting},
             </Text>
             <Text style={[styles.name, { color: colors.text }]}>
               {state.studentInfo.name}
@@ -326,15 +336,19 @@ export default function DashboardScreen() {
       >
         <Ionicons name="add" size={28} color="#FFFFFF" />
       </Pressable>
-    </View>
+
+      {/* Scroll-fade overlay */}
+      <ScrollFade color={colors.background} />
+    </TabEnterAnimation>
   );
 }
 
-function getTimeOfDay() {
+function getTimeOfDay(): string {
   const h = new Date().getHours();
-  if (h < 12) return 'morning';
-  if (h < 17) return 'afternoon';
-  return 'evening';
+  if (h >= 5  && h < 12) return 'morning';
+  if (h >= 12 && h < 18) return 'afternoon';
+  if (h >= 18 && h < 22) return 'evening';
+  return 'night';
 }
 
 const styles = StyleSheet.create({
@@ -430,7 +444,7 @@ const styles = StyleSheet.create({
   completedLabel: { fontSize: FontSizes.md, fontWeight: '600' },
   completedMeta: { fontSize: FontSizes.xs, marginTop: 2 },
   fab: {
-    position: 'absolute', bottom: 90, right: Spacing.lg,
+    position: 'absolute', bottom: 12, right: Spacing.md,
     width: 56, height: 56, borderRadius: 28,
     alignItems: 'center', justifyContent: 'center',
     elevation: 8,

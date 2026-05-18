@@ -204,7 +204,7 @@ export default function AddCourseModal() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
+  container: { flex: 1, marginTop: Spacing.xl },
   scroll: { padding: Spacing.lg },
   headerRow: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
