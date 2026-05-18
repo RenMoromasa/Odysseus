@@ -130,7 +130,7 @@ const [themeMode, setThemeModeState] = useState(getThemeMode());
                 color={colors.success} colors={colors}
               />
               <SummaryItem
-                icon="book" label="Credits Done"
+                icon="book" label="Units Done"
                 value={`${gpaData.completedCredits}/${gpaData.totalCredits}`}
                 color={colors.accent} colors={colors}
               />

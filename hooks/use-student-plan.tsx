@@ -12,6 +12,8 @@ import {
   fetchDefaultTags,
   fetchSemesterTemplate,
 } from '@/services/catalog';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { db } from '@/config/firebase';
 import React, {
   createContext,
   useCallback,
@@ -19,6 +21,7 @@ import React, {
   useEffect,
   useMemo,
   useReducer,
+  useRef,
   useState,
 } from 'react';
 
@@ -141,7 +144,11 @@ function studentPlanReducer(state: StudentPlanState, action: StudentPlanAction):
       };
     }
     case 'RESET_PLAN': {
-      return { ...INITIAL_STATE };
+      return {
+        ...INITIAL_STATE,
+        studentInfo: state.studentInfo,
+        semesters: action.semesters,
+      };
     }
     default:
       return state;
@@ -154,7 +161,6 @@ interface StudentPlanContextType {
   dispatch: React.Dispatch<StudentPlanAction>;
   catalog: Course[];
   loading: boolean;
-  // Helpers
   getCourse: (id: string) => Course | undefined;
   getAllTags: () => Tag[];
   getTagById: (id: string) => Tag | undefined;
@@ -185,6 +191,8 @@ export function StudentPlanProvider({ children }: { children: React.ReactNode })
   const [defaultTags, setDefaultTags] = useState<Tag[]>([]);
   const [loading, setLoading] = useState(true);
   const { profile } = useAuth();
+  const hasPlanLoaded = useRef(false);
+  const saveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Load default tags once
   useEffect(() => {
@@ -208,17 +216,36 @@ export function StudentPlanProvider({ children }: { children: React.ReactNode })
     });
   }, [profile]);
 
-  // Load catalog + semester template whenever the program changes
+  // Load catalog + semester template (or saved plan) whenever the program changes
   useEffect(() => {
     const program = state.studentInfo.program;
-    if (!program) return;
+    if (!program || !profile) return;
     let cancelled = false;
     setLoading(true);
-    Promise.all([fetchCourseCatalog(program), fetchSemesterTemplate(program)])
-      .then(([cat, sems]) => {
+    hasPlanLoaded.current = false;
+
+    Promise.all([
+      fetchCourseCatalog(program),
+      fetchSemesterTemplate(program),
+      getDoc(doc(db, 'users', profile.uid, 'plan', 'current')),
+    ])
+      .then(([cat, templateSems, savedPlanSnap]) => {
         if (cancelled) return;
         setCatalog(cat);
-        dispatch({ type: 'SET_PROGRAM', program, semesters: sems });
+
+        // If user has a saved plan, use it; otherwise use the template
+        if (savedPlanSnap.exists()) {
+          const savedData = savedPlanSnap.data();
+          dispatch({
+            type: 'SET_PROGRAM',
+            program,
+            semesters: savedData.semesters as Semester[],
+          });
+        } else {
+          dispatch({ type: 'SET_PROGRAM', program, semesters: templateSems });
+        }
+
+        hasPlanLoaded.current = true;
       })
       .catch(err => console.error(`Failed to load program "${program}":`, err))
       .finally(() => {
@@ -228,6 +255,26 @@ export function StudentPlanProvider({ children }: { children: React.ReactNode })
       cancelled = true;
     };
   }, [state.studentInfo.program]);
+
+  // Auto-save plan to Firestore when semesters change (debounced)
+  useEffect(() => {
+    if (!profile || !hasPlanLoaded.current) return;
+    if (state.semesters.length === 0) return;
+
+    // Debounce saves to avoid hammering Firestore on rapid changes
+    if (saveTimeout.current) clearTimeout(saveTimeout.current);
+    saveTimeout.current = setTimeout(() => {
+      setDoc(doc(db, 'users', profile.uid, 'plan', 'current'), {
+        semesters: state.semesters,
+        customTags: state.customTags,
+        updatedAt: new Date().toISOString(),
+      }).catch(err => console.error('Failed to save plan:', err));
+    }, 1500);
+
+    return () => {
+      if (saveTimeout.current) clearTimeout(saveTimeout.current);
+    };
+  }, [state.semesters, state.customTags, profile]);
 
   const getCourse = useCallback((id: string) => {
     return catalog.find(c => c.id === id);
