@@ -86,6 +86,7 @@ export type StudentPlanAction =
   | { type: 'SET_GRADE'; semesterId: string; courseId: string; grade: string }
   | { type: 'CLEAR_GRADE'; semesterId: string; courseId: string }
   | { type: 'SET_SEMESTER_STATUS'; semesterId: string; status: SemesterStatus }
+  | { type: 'CLEAR_SEMESTER_COURSES'; semesterId: string }
   | { type: 'ADD_TAG'; tag: Tag }
   | { type: 'UPDATE_TAG'; tagId: string; updates: Partial<Tag> }
   | { type: 'DELETE_TAG'; tagId: string }

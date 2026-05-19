@@ -117,26 +117,45 @@ export default function PlannerScreen() {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'completed': return 'checkmark-circle';
+      case 'completed':   return 'checkmark-circle';
       case 'in-progress': return 'ellipsis-horizontal-circle';
-      default: return 'time-outline';
+      default:            return 'time-outline';
     }
   };
 
+  // Green = completed, Orange = in-progress or planned
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'completed': return colors.success;
-      case 'in-progress': return colors.accent;
-      default: return colors.textMuted;
+      case 'completed':   return colors.success;           // green
+      case 'in-progress': return colors.warning;           // orange
+      default:            return colors.warning + 'AA';    // orange, softer for planned
     }
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'completed':   return 'Completed';
+      case 'in-progress': return 'In Progress';
+      default:            return 'Planned';
+    }
+  };
+
+  // Grade badge colors
+  const getGradeColor = (grade?: string) => {
+    if (!grade) return { text: colors.textMuted, bg: colors.surfaceLight };
+    if (grade === 'NC' || grade === '5.00') return { text: colors.danger, bg: colors.dangerSoft };
+    return { text: colors.success, bg: colors.successSoft };
   };
 
   const getYearSummary = (semesters: typeof state.semesters) => {
     let totalCredits = 0;
     let completedSems = 0;
+    const seenCourseIds = new Set<string>(); // deduplicate across semesters
     for (const sem of semesters) {
       if (sem.status === 'completed') completedSems++;
       for (const sc of sem.courses) {
+        if (seenCourseIds.has(sc.courseId)) continue;
+        seenCourseIds.add(sc.courseId);
         const c = getCourse(sc.courseId);
         if (c) totalCredits += c.credits;
       }
@@ -198,15 +217,31 @@ export default function PlannerScreen() {
           const yearStatus = getYearStatus(yearGroup.semesters);
 
           return (
-            <View key={yearGroup.year} style={styles.yearBlock}>
+            <View
+              key={yearGroup.year}
+              style={[
+                styles.yearBlock,
+                {
+                  // Green left border if done, orange if current/planned
+                  borderLeftWidth: 3,
+                  borderLeftColor: getStatusColor(yearStatus),
+                  borderRadius: Radii.lg,
+                  overflow: 'hidden',
+                },
+              ]}
+            >
               {/* Year Header — Tap to expand/collapse */}
               <Pressable
                 onPress={() => toggleYear(yearGroup.year)}
                 style={({ pressed }) => [
                   styles.yearHeader,
                   {
-                    backgroundColor: colors.surface,
-                    borderColor: isExpanded ? colors.accent + '40' : colors.glassBorder,
+                    backgroundColor: yearStatus === 'completed'
+                      ? colors.success + '10'
+                      : colors.warning + '08',
+                    borderColor: isExpanded
+                      ? getStatusColor(yearStatus) + '50'
+                      : colors.glassBorder,
                   },
                   pressed && { opacity: 0.85 },
                 ]}
@@ -219,16 +254,23 @@ export default function PlannerScreen() {
                     {yearGroup.label}
                   </Text>
                   <Text style={[styles.yearMeta, { color: colors.textMuted }]}>
-                    {summary.totalSems} semesters · {summary.totalCredits} credits
+                    {summary.totalSems} sems · {summary.totalCredits} credits
                   </Text>
                 </View>
+                {/* Completion chip: X/Y semesters done */}
                 <View style={[
-                  styles.statusBadge,
-                  { backgroundColor: getStatusColor(yearStatus) + '18' },
+                  styles.completionChip,
+                  { backgroundColor: getStatusColor(yearStatus) + '18',
+                    borderColor: getStatusColor(yearStatus) + '40' },
                 ]}>
-                  <Text style={[styles.statusText, { color: getStatusColor(yearStatus) }]}>
-                    {yearStatus === 'in-progress' ? 'Current' :
-                     yearStatus === 'completed' ? 'Done' : 'Planned'}
+                  <Ionicons
+                    name={getStatusIcon(yearStatus) as any}
+                    size={12}
+                    color={getStatusColor(yearStatus)}
+                  />
+                  <Text style={[styles.completionChipText, { color: getStatusColor(yearStatus) }]}>
+                    {yearStatus === 'completed' ? 'Done' :
+                     yearStatus === 'in-progress' ? 'Current' : 'Planned'}
                   </Text>
                 </View>
                 <Ionicons
@@ -251,11 +293,22 @@ export default function PlannerScreen() {
                   <View key={semester.id} style={styles.semesterBlock}>
                     {/* Timeline connector */}
                     {index > 0 && (
-                      <View style={[styles.timelineConnector, { backgroundColor: colors.border }]} />
+                      <View style={[styles.timelineConnector, { backgroundColor: getStatusColor(semester.status) + '60' }]} />
                     )}
 
                     {/* Semester header */}
-                    <View style={styles.semesterHeader}>
+                    <View style={[
+                      styles.semesterHeader,
+                      {
+                        backgroundColor: semester.status === 'completed'
+                          ? colors.success + '08'
+                          : semester.status === 'in-progress'
+                            ? colors.warning + '08'
+                            : 'transparent',
+                        borderRadius: Radii.md,
+                        paddingHorizontal: Spacing.sm,
+                      },
+                    ]}>
                       <View style={[styles.timelineDot, { backgroundColor: getStatusColor(semester.status) }]}>
                         <Ionicons
                           name={getStatusIcon(semester.status) as any}
@@ -271,10 +324,10 @@ export default function PlannerScreen() {
                           <Text style={[styles.metaText, { color: colors.textMuted }]}>
                             {totalCredits} credits
                           </Text>
-                          {semester.status === 'completed' && semGPA > 0 && (
+                          {semGPA > 0 && (
                             <>
                               <Text style={[styles.metaDot, { color: colors.border }]}>·</Text>
-                              <Text style={[styles.metaText, { color: colors.success }]}>
+                              <Text style={[styles.metaText, { color: getStatusColor(semester.status) }]}>
                                 GPA {semGPA.toFixed(2)}
                               </Text>
                             </>
@@ -285,7 +338,11 @@ export default function PlannerScreen() {
 
                     {/* Course list */}
                     <View style={styles.courseList}>
-                      {semester.courses.map((sc) => {
+                      {/* Deduplicate courseIds before rendering to prevent duplicate key warnings
+                          (safety net for any stale saved data that predates the reducer guard) */}
+                      {Array.from(
+                        new Map(semester.courses.map(sc => [sc.courseId, sc])).values()
+                      ).map((sc, courseIdx) => {
                         const course = getCourse(sc.courseId);
                         if (!course) return null;
                         const tag = getTagById(course.tags[0]);
@@ -297,7 +354,7 @@ export default function PlannerScreen() {
 
                         return (
                           <Pressable
-                            key={`${semester.id}-${sc.courseId}`}
+                            key={`${semester.id}-${sc.courseId}-${courseIdx}`}
                             onPress={() => {
                               if (canEdit) {
                                 toggleCourseForDrop(semester.id, sc.courseId);
@@ -328,30 +385,22 @@ export default function PlannerScreen() {
                               pressed && { opacity: 0.8, transform: [{ scale: 0.98 }] },
                             ]}
                           >
-                            <View style={[styles.courseStrip, { backgroundColor: tag?.color ?? colors.accent }]} />
+                            {/* Left strip: grade status color */}
+                            <View style={[styles.courseStrip, {
+                              backgroundColor: sc.grade
+                                ? (sc.grade === 'NC' || sc.grade === '5.00'
+                                    ? colors.danger
+                                    : colors.success)
+                                : (semester.status === 'in-progress' ? colors.warning : colors.border),
+                            }]} />
                             <View style={styles.courseContent}>
                               <View style={styles.courseTopRow}>
                                 <Text style={[styles.courseCode, { color: colors.textMuted }]}>
                                   {course.code}
                                 </Text>
-                                <View style={styles.courseRight}>
-                                  {sc.grade && (
-                                    <View style={[styles.gradePill, {
-                                      backgroundColor: sc.grade === 'NC' ? colors.warningSoft
-                                        : sc.grade === '5.00' ? colors.dangerSoft
-                                        : colors.successSoft,
-                                    }]}>
-                                      <Text style={[styles.gradeText, {
-                                        color: sc.grade === 'NC' ? colors.warning
-                                          : sc.grade === '5.00' ? colors.danger
-                                          : colors.success,
-                                      }]}>{sc.grade}</Text>
-                                    </View>
-                                  )}
-                                  {hasConflict && !editMode && (
-                                    <Ionicons name="warning" size={14} color={colors.danger} />
-                                  )}
-                                </View>
+                                {hasConflict && !editMode && (
+                                  <Ionicons name="warning" size={13} color={colors.danger} />
+                                )}
                               </View>
                               <Text style={[styles.courseName, { color: colors.text }]} numberOfLines={1}>
                                 {sc.customName || course.name}
@@ -363,6 +412,21 @@ export default function PlannerScreen() {
                                 {!editMode && tag && <TagBadge name={tag.name} color={tag.color} size="sm" />}
                               </View>
                             </View>
+
+                            {/* Grade badge — always visible, right side */}
+                            {!editMode && (
+                              <View style={[
+                                styles.gradeBadge,
+                                { backgroundColor: getGradeColor(sc.grade).bg },
+                              ]}>
+                                <Text style={[
+                                  styles.gradeBadgeText,
+                                  { color: getGradeColor(sc.grade).text },
+                                ]}>
+                                  {sc.grade ?? '—'}
+                                </Text>
+                              </View>
+                            )}
 
                             {/* Edit mode checkbox — right side */}
                             {editMode && (
@@ -527,10 +591,13 @@ const styles = StyleSheet.create({
   yearInfo: { flex: 1 },
   yearLabel: { fontSize: FontSizes.lg, fontWeight: '700' },
   yearMeta: { fontSize: FontSizes.xs, marginTop: 2, fontWeight: '500' },
-  statusBadge: {
-    paddingHorizontal: Spacing.sm + 2, paddingVertical: 4, borderRadius: Radii.full,
+  // Completion chip on year header (replaces statusBadge)
+  completionChip: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    paddingHorizontal: Spacing.sm + 2, paddingVertical: 4,
+    borderRadius: Radii.full, borderWidth: 1,
   },
-  statusText: { fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
+  completionChipText: { fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
 
   // Semester (inside expanded year)
   semesterBlock: { marginTop: Spacing.md, marginLeft: Spacing.xs, position: 'relative' },
@@ -539,7 +606,7 @@ const styles = StyleSheet.create({
   },
   semesterHeader: {
     flexDirection: 'row', alignItems: 'center', gap: Spacing.sm,
-    marginBottom: Spacing.sm, paddingVertical: Spacing.xs,
+    marginBottom: Spacing.sm, paddingVertical: Spacing.sm,
   },
   timelineDot: {
     width: 28, height: 28, borderRadius: 14,
@@ -550,6 +617,14 @@ const styles = StyleSheet.create({
   semesterMeta: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
   metaText: { fontSize: FontSizes.xs, fontWeight: '500' },
   metaDot: { fontSize: FontSizes.xs },
+  // Semester status pill
+  semStatusPill: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    paddingHorizontal: 8, paddingVertical: 3,
+    borderRadius: Radii.full, borderWidth: 1,
+  },
+  semStatusDot: { width: 6, height: 6, borderRadius: 3 },
+  semStatusText: { fontSize: 10, fontWeight: '700' },
 
   // Course items
   courseList: {
@@ -576,11 +651,13 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   courseCredits: { fontSize: 10, fontWeight: '500' },
-  courseRight: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },
-  gradePill: {
-    paddingHorizontal: 7, paddingVertical: 2, borderRadius: Radii.sm,
+  // Grade badge: always-visible, right of each course row
+  gradeBadge: {
+    minWidth: 42, alignItems: 'center', justifyContent: 'center',
+    paddingVertical: Spacing.sm, paddingHorizontal: Spacing.sm,
+    marginRight: Spacing.sm, borderRadius: Radii.sm,
   },
-  gradeText: { fontSize: 10, fontWeight: '800' },
+  gradeBadgeText: { fontSize: FontSizes.sm, fontWeight: '800' },
   addCourseBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
     gap: Spacing.xs, paddingVertical: Spacing.sm + 2,

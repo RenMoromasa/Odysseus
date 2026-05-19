@@ -185,7 +185,7 @@ export default function ProfileScreen() {
             </Pressable>
 
             <Pressable
-              style={styles.settingItem}
+              style={[styles.settingItem, { borderBottomColor: colors.border }]}
               onPress={handleLogout}
             >
               <View style={styles.settingLeft}>
@@ -193,6 +193,19 @@ export default function ProfileScreen() {
                   <Ionicons name="log-out" size={18} color={colors.danger} />
                 </View>
                 <Text style={[styles.settingLabel, { color: colors.danger }]}>Sign Out</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+            </Pressable>
+
+            <Pressable
+              style={styles.settingItem}
+              onPress={() => router.push('/(modals)/confirm-delete-account-modal')}
+            >
+              <View style={styles.settingLeft}>
+                <View style={[styles.settingIcon, { backgroundColor: colors.dangerSoft }]}>
+                  <Ionicons name="person-remove" size={18} color={colors.danger} />
+                </View>
+                <Text style={[styles.settingLabel, { color: colors.danger }]}>Delete Account</Text>
               </View>
               <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
             </Pressable>

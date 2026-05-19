@@ -46,7 +46,10 @@ function studentPlanReducer(state: StudentPlanState, action: StudentPlanAction):
         ...state,
         semesters: state.semesters.map(sem =>
           sem.id === action.semesterId
-            ? { ...sem, courses: [...sem.courses, { courseId: action.courseId }] }
+            // Guard: only add if course is not already in this semester
+            ? sem.courses.some(c => c.courseId === action.courseId)
+              ? sem
+              : { ...sem, courses: [...sem.courses, { courseId: action.courseId }] }
             : sem
         ),
       };
@@ -163,6 +166,15 @@ function studentPlanReducer(state: StudentPlanState, action: StudentPlanAction):
         ...state,
         semesters: action.semesters,
         customTags: [],
+      };
+    }
+    case 'CLEAR_SEMESTER_COURSES': {
+      // Wipe all courses from a specific semester (used before re-adding during onboarding)
+      return {
+        ...state,
+        semesters: state.semesters.map(sem =>
+          sem.id === action.semesterId ? { ...sem, courses: [] } : sem
+        ),
       };
     }
     default:
@@ -324,29 +336,48 @@ export function StudentPlanProvider({ children }: { children: React.ReactNode })
 
   const calculateGPA = useCallback(() => {
     let totalPoints = 0;
-    let totalCredits = 0;
-    let completedCredits = 0;
-    let allCredits = 0;
+    let gradedCredits = 0;   // credits that have a grade (for GPA denominator)
+    let completedCredits = 0; // credits with a passing grade
+    let allCredits = 0;       // total credits in the entire curriculum (deduplicated)
+
+    // Deduplicate: track which courseIds we've already counted
+    const seenForTotal = new Set<string>();
+    const seenForCompleted = new Set<string>();
 
     for (const sem of state.semesters) {
       for (const sc of sem.courses) {
         const course = catalog.find(c => c.id === sc.courseId);
         if (!course) continue;
-        allCredits += course.credits;
+
+        // Total units — count each unique course only once
+        if (!seenForTotal.has(sc.courseId)) {
+          allCredits += course.credits;
+          seenForTotal.add(sc.courseId);
+        }
+
+        // Graded units — count every graded entry for GPA calculation
         const gradeVal = sc.grade === 'NC' ? 5.00 : sc.grade ? parseFloat(sc.grade) : NaN;
         if (sc.grade && !isNaN(gradeVal)) {
           totalPoints += gradeVal * course.credits;
-          totalCredits += course.credits;
-          if (sc.grade !== '5.00' && sc.grade !== 'NC') {
-            completedCredits += course.credits;
-          }
+          gradedCredits += course.credits;
+        }
+
+        // Completed (passing) units — count each course once, first passing grade wins
+        if (
+          sc.grade &&
+          sc.grade !== '5.00' &&
+          sc.grade !== 'NC' &&
+          !seenForCompleted.has(sc.courseId)
+        ) {
+          completedCredits += course.credits;
+          seenForCompleted.add(sc.courseId);
         }
       }
     }
 
     return {
-      overall: totalCredits > 0 ? totalPoints / totalCredits : 0,
-      completed: totalCredits,
+      overall: gradedCredits > 0 ? totalPoints / gradedCredits : 0,
+      completed: gradedCredits,
       totalCredits: allCredits,
       completedCredits,
     };
@@ -357,7 +388,10 @@ export function StudentPlanProvider({ children }: { children: React.ReactNode })
     if (!sem) return 0;
     let points = 0;
     let credits = 0;
+    const seen = new Set<string>();
     for (const sc of sem.courses) {
+      if (seen.has(sc.courseId)) continue; // skip duplicates
+      seen.add(sc.courseId);
       const course = catalog.find(c => c.id === sc.courseId);
       const gradeVal = sc.grade === 'NC' ? 5.00 : sc.grade ? parseFloat(sc.grade) : NaN;
       if (!course || !sc.grade || isNaN(gradeVal)) continue;

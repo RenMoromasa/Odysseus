@@ -6,8 +6,11 @@ import {
   createUserWithEmailAndPassword,
   signOut,
   sendPasswordResetEmail,
+  deleteUser,
+  EmailAuthProvider,
+  reauthenticateWithCredential,
 } from 'firebase/auth';
-import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { auth, db } from '@/config/firebase';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -46,6 +49,7 @@ type AuthContextType = AuthState & {
   updateProfile: (updates: Partial<UserProfile>) => Promise<void>;
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
+  deleteAccount: (password: string) => Promise<void>;
   clearError: () => void;
 };
 
@@ -67,9 +71,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Fetch user profile from Firestore
         try {
           const profileDoc = await getDoc(doc(db, 'users', user.uid));
-          const profile = profileDoc.exists()
-            ? (profileDoc.data() as UserProfile)
-            : null;
+
+          if (!profileDoc.exists()) {
+            // Profile was deleted from Firestore — force sign out so the user
+            // cannot access the app with a "ghost" Firebase Auth account.
+            await signOut(auth);
+            setState({
+              user: null,
+              profile: null,
+              loading: false,
+              error: 'Your account no longer exists. Please register again.',
+            });
+            return;
+          }
+
+          const profile = profileDoc.data() as UserProfile;
           setState({ user, profile, loading: false, error: null });
         } catch {
           setState({ user, profile: null, loading: false, error: null });
@@ -159,6 +175,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await signOut(auth);
   };
 
+  // ── Delete Account ──
+  const deleteAccount = async (password: string) => {
+    if (!state.user || !state.user.email) {
+      throw new Error('No user logged in.');
+    }
+    setState((s) => ({ ...s, error: null }));
+    try {
+      // Re-authenticate (required by Firebase for sensitive operations)
+      const credential = EmailAuthProvider.credential(state.user.email, password);
+      await reauthenticateWithCredential(state.user, credential);
+
+      // 1. Delete Firestore profile document
+      await deleteDoc(doc(db, 'users', state.user.uid));
+
+      // 2. Delete Firebase Auth account — this signs the user out automatically
+      await deleteUser(state.user);
+    } catch (err: any) {
+      const message = getFirebaseErrorMessage(err.code);
+      setState((s) => ({ ...s, error: message }));
+      throw new Error(message);
+    }
+  };
+
   // ── Reset Password ──
   const resetPassword = async (email: string) => {
     try {
@@ -176,7 +215,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 return (
     <AuthContext.Provider
-      value={{ ...state, login, register, updateProfile, logout, resetPassword, clearError }}
+      value={{ ...state, login, register, updateProfile, logout, resetPassword, deleteAccount, clearError }}
     >
       {children}
     </AuthContext.Provider>
@@ -204,7 +243,7 @@ function getFirebaseErrorMessage(code: string): string {
     case 'auth/invalid-credential':
       return 'Invalid email or password.';
     case 'auth/email-already-in-use':
-      return 'An account with this email already exists.';
+      return 'This email is already registered. If you deleted your account, please contact an admin to fully remove it before re-registering.';
     case 'auth/weak-password':
       return 'Password must be at least 6 characters.';
     case 'auth/too-many-requests':

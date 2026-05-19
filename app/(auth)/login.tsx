@@ -3,7 +3,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Dimensions,
@@ -19,12 +19,19 @@ import {
 const { width } = Dimensions.get('window');
 export default function LoginScreen() {
   const router = useRouter();
-  const { login } = useAuth();
+  const { login, error: authError, clearError } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string; general?: string }>({});
+
+  // Show any auth-level error (e.g., deleted Firestore account auto-login)
+  useEffect(() => {
+    if (authError) {
+      setErrors((e) => ({ ...e, general: authError }));
+    }
+  }, [authError]);
   const handleLogin = async () => {
     const newErrors: { email?: string; password?: string } = {};
     if (!email.trim()) {
@@ -107,7 +114,7 @@ export default function LoginScreen() {
                 <TextInput
                   style={styles.input}
                   value={email}
-                  onChangeText={(t) => { setEmail(t); setErrors(e => ({ ...e, email: undefined, general: undefined })); }}
+                  onChangeText={(t) => { setEmail(t); setErrors(e => ({ ...e, email: undefined, general: undefined })); clearError(); }}
                   placeholder="School Email"
                   placeholderTextColor="#C4C8D8"
                   keyboardType="email-address"

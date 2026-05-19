@@ -1,10 +1,13 @@
+import { GlassCard } from "@/components/ui/glass-card";
 import { AppColors, FontSizes, Radii, Spacing } from "@/constants/theme";
+import { Course } from "@/constants/types";
 import { useAuth } from "@/hooks/use-auth";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useStudentPlan } from "@/hooks/use-student-plan";
+import { getCurrentSemester } from "@/utils/semester";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -13,22 +16,31 @@ import {
   Text,
   View,
 } from "react-native";
-import { getCurrentSemester, isSemesterMatching } from "@/utils/semester";
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function termLabel(term: number) {
+  if (term === 1) return "1st Semester";
+  if (term === 2) return "2nd Semester";
+  return "Summer";
+}
+
+// ─── Component ───────────────────────────────────────────────────────────────
 
 export default function RegularCoursesModal() {
   const router = useRouter();
   const colorScheme = useColorScheme() ?? "dark";
   const colors = AppColors[colorScheme];
-  const { profile, updateProfile } = useAuth();
+  const { updateProfile } = useAuth();
   const { state: planState, dispatch, catalog } = useStudentPlan();
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-useEffect(() => {
-    // For regular students, populate prospectus courses and set proper semester statuses
-    const hasEmptySemesters = planState.semesters.some(s => s.courses.length === 0);
+  // ── Populate prospectus on mount ──
+  useEffect(() => {
+    const hasEmptySemesters = planState.semesters.some((s) => s.courses.length === 0);
 
     if (planState.semesters.length > 0 && hasEmptySemesters && catalog.length > 0) {
       const currentSem = getCurrentSemester();
@@ -40,85 +52,94 @@ useEffect(() => {
         const semester = planState.semesters[i];
         const startIdx = i * coursesPerSemester;
         const endIdx = Math.min(startIdx + coursesPerSemester, catalog.length);
-
         for (let j = startIdx; j < endIdx; j++) {
-          dispatch({
-            type: 'ADD_COURSE_TO_SEMESTER',
-            semesterId: semester.id,
-            courseId: catalog[j].id,
-          });
+          dispatch({ type: "ADD_COURSE_TO_SEMESTER", semesterId: semester.id, courseId: catalog[j].id });
         }
       }
 
-      // Second pass: set semester statuses and grades
+      // Second pass: set statuses and grades
       for (let i = 0; i < planState.semesters.length; i++) {
         const semester = planState.semesters[i];
-        const isSameYear = semester.year === studentYear;
+        if (semester.year !== studentYear) continue;
 
-        // Only process semesters in the student's current year
-        if (isSameYear) {
-          const currentTermNum = currentSem.term === 'summer' ? 3 : currentSem.term === 'first' ? 1 : 2;
-          const isCurrentSem = semester.term === currentTermNum;
-          const isBeforeCurrent = semester.term < currentTermNum;
+        const currentTermNum =
+          currentSem.term === "summer" ? 3 : currentSem.term === "first" ? 1 : 2;
+        const isCurrentSem = semester.term === currentTermNum;
+        const isBeforeCurrent = semester.term < currentTermNum;
 
-          if (isCurrentSem) {
-            // Mark current semester as in-progress
-            dispatch({
-              type: 'SET_SEMESTER_STATUS',
-              semesterId: semester.id,
-              status: 'in-progress',
-            });
-          } else if (isBeforeCurrent) {
-            // Mark previous semesters as completed and grade courses
-            dispatch({
-              type: 'SET_SEMESTER_STATUS',
-              semesterId: semester.id,
-              status: 'completed',
-            });
-
-            const startIdx = i * coursesPerSemester;
-            const endIdx = Math.min(startIdx + coursesPerSemester, catalog.length);
-
-            for (let j = startIdx; j < endIdx; j++) {
-              dispatch({
-                type: 'SET_GRADE',
-                semesterId: semester.id,
-                courseId: catalog[j].id,
-                grade: '3.00',
-              });
-            }
+        if (isCurrentSem) {
+          dispatch({ type: "SET_SEMESTER_STATUS", semesterId: semester.id, status: "in-progress" });
+        } else if (isBeforeCurrent) {
+          dispatch({ type: "SET_SEMESTER_STATUS", semesterId: semester.id, status: "completed" });
+          const startIdx = i * coursesPerSemester;
+          const endIdx = Math.min(startIdx + coursesPerSemester, catalog.length);
+          for (let j = startIdx; j < endIdx; j++) {
+            dispatch({ type: "SET_GRADE", semesterId: semester.id, courseId: catalog[j].id, grade: "3.00" });
           }
-          // Future semesters (isAfterCurrent) remain as 'planned'
         }
       }
     }
 
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 500);
+    const timer = setTimeout(() => setIsLoading(false), 500);
     return () => clearTimeout(timer);
   }, [dispatch, planState.semesters, catalog, planState.studentInfo.yearLevel]);
 
-  // Get all courses from the prospectus (full curriculum)
-  const getAllProspectusCourses = () => {
-    const allCourseIds: string[] = [];
+  // ── Build grouped view: Year → Semester → Courses (sorted by code) ──
+  const groupedSemesters = useMemo(() => {
+    const courseMap = new Map<string, Course>(catalog.map((c) => [c.id, c]));
+
+    // Collect unique year-term groups in order
+    const seen = new Set<string>();
+    const groups: {
+      year: number;
+      term: number;
+      label: string;
+      courses: Course[];
+      status: string;
+    }[] = [];
+
     for (const semester of planState.semesters) {
-      for (const course of semester.courses) {
-        if (!allCourseIds.includes(course.courseId)) {
-          allCourseIds.push(course.courseId);
+      const key = `${semester.year}-${semester.term}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+
+      // Collect courses for this semester across all semester entries with same year+term
+      const coursesForGroup: Course[] = [];
+      for (const sem of planState.semesters) {
+        if (sem.year !== semester.year || sem.term !== semester.term) continue;
+        for (const sc of sem.courses) {
+          const course = courseMap.get(sc.courseId);
+          if (course && !coursesForGroup.find((c) => c.id === course.id)) {
+            coursesForGroup.push(course);
+          }
         }
       }
+
+      groups.push({
+        year: semester.year,
+        term: semester.term,
+        label: `Year ${semester.year} — ${termLabel(semester.term)}`,
+        status: semester.status,
+        courses: coursesForGroup.sort((a, b) => a.code.localeCompare(b.code)),
+      });
     }
-return allCourseIds;
-  };
+
+    // Sort by year then term
+    return groups.sort((a, b) =>
+      a.year !== b.year ? a.year - b.year : a.term - b.term
+    );
+  }, [planState.semesters, catalog]);
+
+  const totalCourseCount = useMemo(() => {
+    const ids = new Set<string>();
+    groupedSemesters.forEach((g) => g.courses.forEach((c) => ids.add(c.id)));
+    return ids.size;
+  }, [groupedSemesters]);
 
   const handleContinue = async () => {
     setIsSaving(true);
     try {
-      await updateProfile({
-        isOnboarded: true,
-        studentType: "regular",
-      });
+      await updateProfile({ isOnboarded: true, studentType: "regular" });
       router.replace("/(tabs)");
     } catch (err: any) {
       setError(err.message || "Failed to proceed");
@@ -126,210 +147,171 @@ return allCourseIds;
     }
   };
 
+  // ── Status pill ──
+  const statusConfig = {
+    completed: { label: "Completed", color: "#5CDB95", bg: "rgba(92,219,149,0.15)" },
+    "in-progress": { label: "In Progress", color: "#FFD166", bg: "rgba(255,209,102,0.15)" },
+    planned: { label: "Planned", color: colors.textMuted, bg: colors.surfaceLight },
+  } as const;
+
   if (isLoading) {
     return (
-      <View
-        style={[
-          styles.container,
-          { backgroundColor: colors.background, justifyContent: "center" },
-        ]}
-      >
+      <View style={[styles.container, { backgroundColor: colors.background, justifyContent: "center" }]}>
         <ActivityIndicator size="large" color={colors.accent} />
+        <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
+          Loading your curriculum…
+        </Text>
       </View>
     );
   }
 
-  // For regular students, all courses in the prospectus are loaded
-  const allProspectusCourseIds = getAllProspectusCourses();
-  const totalCourseCount = allProspectusCourseIds.length;
-  const semesterCount = planState.semesters.length;
-
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView
-        contentContainerStyle={{ flexGrow: 1 }}
+        contentContainerStyle={styles.scrollContent}
         bounces={false}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
+        {/* ── Header ── */}
         <View style={styles.header}>
+          <View style={[styles.iconBadge, { backgroundColor: colors.accentSoft }]}>
+            <Ionicons name="book" size={28} color={colors.accent} />
+          </View>
           <Text style={[styles.title, { color: colors.text }]}>
-            Setting up your courses
+            Your Curriculum
           </Text>
           <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-            We've loaded your full curriculum prospectus
+            We've loaded your full prospectus. Review your courses by year and semester.
           </Text>
         </View>
 
-        {/* Error Message */}
-        {error && (
-          <View
-            style={[
-              styles.errorBanner,
-              {
-                backgroundColor: colors.dangerSoft,
-                borderColor: colors.danger,
-              },
-            ]}
-          >
-            <Ionicons name="alert-circle" size={18} color={colors.danger} />
-            <Text style={[styles.errorText, { color: colors.danger }]}>
-              {error}
+        {/* ── Stats Row ── */}
+        <View style={styles.statsRow}>
+          <GlassCard style={styles.statCard}>
+            <View style={[styles.statIcon, { backgroundColor: colors.accentSoft }]}>
+              <Ionicons name="book-outline" size={20} color={colors.accent} />
+            </View>
+            <Text style={[styles.statValue, { color: colors.text }]}>{totalCourseCount}</Text>
+            <Text style={[styles.statLabel, { color: colors.textMuted }]}>Total Courses</Text>
+          </GlassCard>
+          <GlassCard style={styles.statCard}>
+            <View style={[styles.statIcon, { backgroundColor: colors.warningSoft }]}>
+              <Ionicons name="calendar-outline" size={20} color={colors.warning} />
+            </View>
+            <Text style={[styles.statValue, { color: colors.text }]}>{groupedSemesters.length}</Text>
+            <Text style={[styles.statLabel, { color: colors.textMuted }]}>Semesters</Text>
+          </GlassCard>
+          <GlassCard style={styles.statCard}>
+            <View style={[styles.statIcon, { backgroundColor: colors.successSoft }]}>
+              <Ionicons name="school-outline" size={20} color={colors.success} />
+            </View>
+            <Text style={[styles.statValue, { color: colors.text }]}>
+              {Math.max(...groupedSemesters.map((g) => g.year), 0)}
             </Text>
-          </View>
-        )}
+            <Text style={[styles.statLabel, { color: colors.textMuted }]}>Years</Text>
+          </GlassCard>
+        </View>
 
-        {/* Info Banner */}
-        <View
-          style={[
-            styles.infoBanner,
-            {
-              backgroundColor: colors.accentSoft,
-              borderColor: colors.accent,
-            },
-          ]}
-        >
-          <Ionicons name="information-circle" size={18} color={colors.accent} />
+        {/* ── Info Banner ── */}
+        <View style={[styles.infoBanner, { backgroundColor: colors.accentSoft, borderColor: colors.accent + "40" }]}>
+          <Ionicons name="checkmark-circle" size={16} color={colors.accent} />
           <Text style={[styles.infoText, { color: colors.accent }]}>
-            Your complete curriculum has been automatically loaded based on your program. You're ready to start tracking your progress!
+            All {totalCourseCount} courses across {groupedSemesters.length} semesters have been added to your plan.
           </Text>
         </View>
 
-        {/* Course Summary */}
-        <View style={styles.summaryContainer}>
-          <View
-            style={[
-              styles.summaryCard,
-              {
-                backgroundColor: colors.surfaceLight,
-                borderColor: colors.border,
-              },
-            ]}
-          >
-            <View style={styles.summaryItem}>
-              <View
-                style={[
-                  styles.summaryIcon,
-                  { backgroundColor: colors.accentSoft },
-                ]}
-              >
-                <Ionicons
-                  name="book"
-                  size={24}
-                  color={colors.accent}
-                />
-              </View>
-              <View>
-                <Text
-                  style={[styles.summaryLabel, { color: colors.textSecondary }]}
-                >
-                  Total Courses
-                </Text>
-                <Text style={[styles.summaryValue, { color: colors.text }]}>
-                  {totalCourseCount}
-                </Text>
-              </View>
-            </View>
-
-            <View
-              style={[styles.divider, { backgroundColor: colors.border }]}
-            />
-
-            <View style={styles.summaryItem}>
-              <View
-                style={[
-                  styles.summaryIcon,
-                  { backgroundColor: colors.warningSoft },
-                ]}
-              >
-                <Ionicons name="calendar" size={24} color={colors.warning} />
-              </View>
-              <View>
-                <Text
-                  style={[styles.summaryLabel, { color: colors.textSecondary }]}
-                >
-                  Total Semesters
-                </Text>
-                <Text style={[styles.summaryValue, { color: colors.text }]}>
-                  {semesterCount}
-                </Text>
-              </View>
-            </View>
-          </View>
-        </View>
-
-        {/* Info Section */}
-        <View style={styles.infoSection}>
-          <View style={styles.infoBox}>
-            <Ionicons
-              name="information-circle"
-              size={20}
-              color={colors.accent}
-            />
-            <Text style={[styles.infoText, { color: colors.textSecondary }]}>
-              We've automatically populated your complete course prospectus
-              based on your program's curriculum. All {totalCourseCount} courses
-              across {semesterCount} semesters have been added to your plan.
-            </Text>
-          </View>
-        </View>
-
-        {/* Course Details */}
-        {totalCourseCount > 0 && (
-          <View style={styles.detailsSection}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>
-              Your Curriculum
-            </Text>
-            <View
-              style={[
-                styles.detailsBox,
-                {
-                  backgroundColor: colors.surfaceLight,
-                  borderColor: colors.border,
-                },
-              ]}
-            >
-              <Text
-                style={[styles.detailsText, { color: colors.textSecondary }]}
-              >
-                {totalCourseCount} courses in your prospectus
-              </Text>
-              <Text
-                style={[styles.detailsText, { color: colors.textSecondary }]}
-              >
-                {semesterCount} semesters to complete
-              </Text>
-            </View>
+        {/* ── Error ── */}
+        {error && (
+          <View style={[styles.errorBanner, { backgroundColor: colors.dangerSoft, borderColor: colors.danger + "50" }]}>
+            <Ionicons name="alert-circle" size={16} color={colors.danger} />
+            <Text style={[styles.errorText, { color: colors.danger }]}>{error}</Text>
           </View>
         )}
+
+        {/* ── Grouped Semester Sections ── */}
+        {groupedSemesters.map((group) => {
+          const sc = statusConfig[group.status as keyof typeof statusConfig] ?? statusConfig.planned;
+          return (
+            <View key={`${group.year}-${group.term}`} style={styles.group}>
+              {/* Section header */}
+              <View style={styles.groupHeader}>
+                <View style={[styles.groupDot, { backgroundColor: colors.accent }]} />
+                <Text style={[styles.groupTitle, { color: colors.text }]}>{group.label}</Text>
+                <View style={[styles.statusPill, { backgroundColor: sc.bg }]}>
+                  <Text style={[styles.statusText, { color: sc.color }]}>{sc.label}</Text>
+                </View>
+              </View>
+
+              {/* Courses */}
+              <GlassCard noPadding>
+                {group.courses.length > 0 ? (
+                  group.courses.map((course, idx) => {
+                    const isLast = idx === group.courses.length - 1;
+                    return (
+                      <View
+                        key={course.id}
+                        style={[
+                          styles.courseRow,
+                          !isLast && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
+                        ]}
+                      >
+                        <View style={[styles.courseNumBadge, { backgroundColor: colors.accentSoft }]}>
+                          <Text style={[styles.courseNumText, { color: colors.accent }]}>
+                            {String(idx + 1).padStart(2, "0")}
+                          </Text>
+                        </View>
+                        <View style={styles.courseInfo}>
+                          <View style={styles.courseTopRow}>
+                            <Text style={[styles.courseCode, { color: colors.accent }]}>
+                              {course.code}
+                            </Text>
+                            <Text style={[styles.courseCredits, { color: colors.textMuted }]}>
+                              {course.credits} unit{course.credits !== 1 ? "s" : ""}
+                            </Text>
+                          </View>
+                          <Text style={[styles.courseName, { color: colors.text }]} numberOfLines={2}>
+                            {course.name}
+                          </Text>
+                          {course.prerequisites.length > 0 && (
+                            <Text style={[styles.prereqText, { color: colors.textMuted }]} numberOfLines={1}>
+                              Prereq: {course.prerequisites.join(", ")}
+                            </Text>
+                          )}
+                        </View>
+                      </View>
+                    );
+                  })
+                ) : (
+                  <View style={styles.emptyGroup}>
+                    <Text style={[styles.emptyGroupText, { color: colors.textMuted }]}>
+                      No courses assigned
+                    </Text>
+                  </View>
+                )}
+              </GlassCard>
+            </View>
+          );
+        })}
+
+        <View style={{ height: 100 }} />
       </ScrollView>
 
-      {/* Footer */}
-      <View
-        style={[
-          styles.footer,
-          { backgroundColor: colors.surface, borderTopColor: colors.border },
-        ]}
-      >
+      {/* ── Footer ── */}
+      <View style={[styles.footer, { backgroundColor: colors.surface, borderTopColor: colors.border }]}>
         <Pressable
           style={({ pressed }) => [
-            styles.continueButton,
-            {
-              backgroundColor: colors.accent,
-              opacity: pressed ? 0.8 : 1,
-            },
+            styles.continueBtn,
+            { backgroundColor: colors.accent, opacity: pressed ? 0.85 : 1 },
           ]}
           onPress={handleContinue}
           disabled={isSaving}
         >
           {isSaving ? (
-            <ActivityIndicator color={colors.surface} size="small" />
+            <ActivityIndicator color="#fff" size="small" />
           ) : (
             <>
-              <Text style={[styles.continueText, { color: colors.surface }]}>
-                Let's Get Started
-              </Text>
-              <Ionicons name="arrow-forward" size={18} color={colors.surface} />
+              <Text style={styles.continueBtnText}>Let's Get Started</Text>
+              <Ionicons name="arrow-forward" size={18} color="#fff" />
             </>
           )}
         </Pressable>
@@ -339,131 +321,102 @@ return allCourseIds;
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    paddingHorizontal: Spacing.md,
+  container: { flex: 1 },
+  scrollContent: {
+    padding: Spacing.lg,
+    paddingBottom: Spacing.xl,
   },
-  header: {
-    paddingVertical: Spacing.xl,
-    paddingTop: Spacing.xl,
+  loadingText: {
+    marginTop: Spacing.md, textAlign: "center", fontSize: FontSizes.sm,
+  },
+
+  // ── Header ──
+  header: { alignItems: "center", marginBottom: Spacing.lg, paddingTop: Spacing.xl + Spacing.md },
+  iconBadge: {
+    width: 64, height: 64, borderRadius: 32,
+    alignItems: "center", justifyContent: "center",
+    marginBottom: Spacing.md,
   },
   title: {
-    fontSize: FontSizes.xl,
-    fontWeight: "700",
+    fontSize: FontSizes.xl, fontWeight: "800",
+    textAlign: "center", letterSpacing: -0.3,
     marginBottom: Spacing.sm,
   },
   subtitle: {
-    fontSize: FontSizes.md,
-    lineHeight: 24,
+    fontSize: FontSizes.sm, textAlign: "center", lineHeight: 20,
   },
-  errorBanner: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    borderRadius: Radii.md,
-    borderWidth: 1,
-    marginBottom: Spacing.md,
-    gap: Spacing.sm,
+
+  // ── Stats ──
+  statsRow: { flexDirection: "row", gap: Spacing.sm, marginBottom: Spacing.md },
+  statCard: { flex: 1, alignItems: "center", paddingVertical: Spacing.md, gap: 4 },
+  statIcon: {
+    width: 36, height: 36, borderRadius: 10,
+    alignItems: "center", justifyContent: "center",
+    marginBottom: 4,
   },
-  errorText: {
-    flex: 1,
-    fontSize: FontSizes.sm,
-    fontWeight: "500",
-  },
+  statValue: { fontSize: FontSizes.lg, fontWeight: "800" },
+  statLabel: { fontSize: FontSizes.xs, fontWeight: "500", textAlign: "center" },
+
+  // ── Banners ──
   infoBanner: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    borderRadius: Radii.md,
-    borderWidth: 1,
-    marginBottom: Spacing.md,
-    gap: Spacing.sm,
+    flexDirection: "row", alignItems: "center", gap: Spacing.sm,
+    paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm,
+    borderRadius: Radii.md, borderWidth: 1, marginBottom: Spacing.md,
   },
-  infoText: {
-    flex: 1,
-    fontSize: FontSizes.sm,
-    fontWeight: "500",
+  infoText: { flex: 1, fontSize: FontSizes.xs, fontWeight: "500", lineHeight: 17 },
+  errorBanner: {
+    flexDirection: "row", alignItems: "center", gap: Spacing.sm,
+    paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm,
+    borderRadius: Radii.md, borderWidth: 1, marginBottom: Spacing.md,
   },
-  summaryContainer: {
-    marginBottom: Spacing.lg,
+  errorText: { flex: 1, fontSize: FontSizes.xs, fontWeight: "500" },
+
+  // ── Groups ──
+  group: { marginBottom: Spacing.lg },
+  groupHeader: {
+    flexDirection: "row", alignItems: "center", gap: Spacing.sm,
+    marginBottom: Spacing.sm,
   },
-  summaryCard: {
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.md,
-    borderRadius: Radii.lg,
-    borderWidth: 1,
+  groupDot: { width: 8, height: 8, borderRadius: 4 },
+  groupTitle: { fontSize: FontSizes.md, fontWeight: "700", flex: 1 },
+  statusPill: {
+    paddingHorizontal: 10, paddingVertical: 3, borderRadius: Radii.full,
   },
-  summaryItem: {
-    flexDirection: "row",
-    alignItems: "center",
+  statusText: { fontSize: FontSizes.xs, fontWeight: "700" },
+
+  // ── Course rows ──
+  courseRow: {
+    flexDirection: "row", alignItems: "flex-start",
+    paddingHorizontal: Spacing.md, paddingVertical: Spacing.md,
     gap: Spacing.md,
   },
-  summaryIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
+  courseNumBadge: {
+    width: 32, height: 32, borderRadius: 8,
+    alignItems: "center", justifyContent: "center", flexShrink: 0,
   },
-  summaryLabel: {
-    fontSize: FontSizes.sm,
-    marginBottom: Spacing.xs,
+  courseNumText: { fontSize: FontSizes.xs, fontWeight: "800" },
+  courseInfo: { flex: 1 },
+  courseTopRow: {
+    flexDirection: "row", alignItems: "center",
+    justifyContent: "space-between", marginBottom: 2,
   },
-  summaryValue: {
-    fontSize: FontSizes.lg,
-    fontWeight: "700",
+  courseCode: { fontSize: FontSizes.sm, fontWeight: "700" },
+  courseCredits: { fontSize: FontSizes.xs, fontWeight: "500" },
+  courseName: { fontSize: FontSizes.sm, lineHeight: 18, marginBottom: 2 },
+  prereqText: { fontSize: FontSizes.xs, lineHeight: 16 },
+  emptyGroup: {
+    paddingVertical: Spacing.md, alignItems: "center",
   },
-  divider: {
-    height: 1,
-    marginVertical: Spacing.md,
-  },
-  infoSection: {
-    marginBottom: Spacing.lg,
-  },
-  infoBox: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: Spacing.md,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.md,
-  },
-  detailsSection: {
-    marginBottom: Spacing.lg,
-  },
-  sectionTitle: {
-    fontSize: FontSizes.md,
-    fontWeight: "600",
-    marginBottom: Spacing.md,
-  },
-  detailsBox: {
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.md,
-    borderRadius: Radii.lg,
-    borderWidth: 1,
-    gap: Spacing.sm,
-  },
-  detailsText: {
-    fontSize: FontSizes.sm,
-  },
+  emptyGroupText: { fontSize: FontSizes.sm },
+
+  // ── Footer ──
   footer: {
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.md,
-    borderTopWidth: 1,
+    paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md,
+    borderTopWidth: StyleSheet.hairlineWidth,
   },
-  continueButton: {
-    paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing.md,
-    borderRadius: Radii.lg,
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 48,
-    flexDirection: "row",
-    gap: Spacing.sm,
+  continueBtn: {
+    flexDirection: "row", alignItems: "center", justifyContent: "center",
+    gap: Spacing.sm, paddingVertical: 16, borderRadius: Radii.lg,
   },
-  continueText: {
-    fontSize: FontSizes.md,
-    fontWeight: "600",
-  },
+  continueBtnText: { fontSize: FontSizes.md, fontWeight: "700", color: "#fff" },
 });
