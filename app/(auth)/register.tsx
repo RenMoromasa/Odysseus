@@ -1,20 +1,26 @@
-import React, { useState } from 'react';
+import { FontSizes, Radii, Spacing } from "@/constants/theme";
+import { useAuth } from "@/hooks/use-auth";
+import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
+import { useRouter } from "expo-router";
+import { useState } from "react";
 import {
-  View, Text, StyleSheet, Pressable, StatusBar,
-  TextInput, KeyboardAvoidingView, Platform, ScrollView,
   ActivityIndicator,
-} from 'react-native';
-import { Image } from 'expo-image';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import { Spacing, FontSizes, Radii } from '@/constants/theme';
-import { useAuth } from '@/hooks/use-auth';
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 
 const PROGRAMS = [
-  'BS - Information Technology',
-  'BS - Information Systems',
-  'BS - Computer Science',
+  "BS - Information Technology",
+  "BS - Information Systems",
+  "BS - Computer Science",
 ];
 
 const YEAR_LEVELS = [1, 2, 3, 4];
@@ -34,13 +40,16 @@ export default function RegisterScreen() {
   const router = useRouter();
   const { register } = useAuth();
 
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [email, setEmail] = useState('');
-  const [idNumber, setIdNumber] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [selectedProgram, setSelectedProgram] = useState('');
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [idNumber, setIdNumber] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+
+  const derivedEmail = idNumber.trim() ? `${idNumber.trim()}@usc.edu.ph` : "";
+
+  const [selectedProgram, setSelectedProgram] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [selectedYearLevel, setSelectedYearLevel] = useState(0);
@@ -50,41 +59,41 @@ export default function RegisterScreen() {
   const [errors, setErrors] = useState<FormErrors & { general?: string }>({});
 
   const clearError = (field: keyof FormErrors) => {
-    setErrors(prev => ({ ...prev, [field]: undefined }));
+    setErrors((prev) => ({ ...prev, [field]: undefined }));
   };
 
   const handleRegister = async () => {
     const newErrors: FormErrors = {};
 
-    if (!firstName.trim()) newErrors.firstName = 'First name is required';
-    if (!lastName.trim()) newErrors.lastName = 'Last name is required';
+    if (!firstName.trim()) newErrors.firstName = "First name is required";
+    if (!lastName.trim()) newErrors.lastName = "Last name is required";
 
-    if (!email.trim()) {
-      newErrors.email = 'School email is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-      newErrors.email = 'Enter a valid email address';
+    // Email is derived from ID number automatically
+    if (!derivedEmail) {
+      newErrors.email = "School email is required";
     }
 
     if (!idNumber.trim()) {
-      newErrors.idNumber = 'ID number is required';
+      newErrors.idNumber = "ID number is required";
     } else if (!/^\d{6,10}$/.test(idNumber.trim())) {
-      newErrors.idNumber = 'Format: eg. 21104187';
+      newErrors.idNumber = "Format: eg. 21104187";
     }
 
     if (!password.trim()) {
-      newErrors.password = 'Password is required';
+      newErrors.password = "Password is required";
     } else if (password.length < 6) {
-      newErrors.password = 'Minimum 6 characters';
+      newErrors.password = "Minimum 6 characters";
     }
 
     if (!confirmPassword.trim()) {
-      newErrors.confirmPassword = 'Please confirm your password';
+      newErrors.confirmPassword = "Please confirm your password";
     } else if (password !== confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
+      newErrors.confirmPassword = "Passwords do not match";
     }
 
-    if (!selectedProgram) newErrors.program = 'Please select a program';
-    if (!selectedYearLevel) newErrors.yearLevel = 'Please select your year level';
+    if (!selectedProgram) newErrors.program = "Please select a program";
+    if (!selectedYearLevel)
+      newErrors.yearLevel = "Please select your year level";
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -94,10 +103,10 @@ export default function RegisterScreen() {
     setErrors({});
     setIsLoading(true);
     try {
-await register({
+      await register({
         firstName: firstName.trim(),
         lastName: lastName.trim(),
-        email: email.trim(),
+        email: derivedEmail,
         idNumber: idNumber.trim(),
         password,
         program: selectedProgram,
@@ -113,11 +122,15 @@ await register({
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
+      <StatusBar
+        barStyle="dark-content"
+        translucent
+        backgroundColor="transparent"
+      />
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         <ScrollView
           contentContainerStyle={{ flexGrow: 1 }}
@@ -128,7 +141,14 @@ await register({
           {/* ── Top: Gradient Background with Logo ─────────────────── */}
           <View style={styles.topSection}>
             <LinearGradient
-              colors={['#E8A87C', '#EDBA94', '#F2CCAC', '#F5DCC4', '#F9EADB', '#FDF5EF']}
+              colors={[
+                "#E8A87C",
+                "#EDBA94",
+                "#F2CCAC",
+                "#F5DCC4",
+                "#F9EADB",
+                "#FDF5EF",
+              ]}
               locations={[0, 0.2, 0.4, 0.6, 0.8, 1]}
               style={StyleSheet.absoluteFill}
             />
@@ -144,10 +164,12 @@ await register({
               onPress={() => router.back()}
               hitSlop={12}
             >
-              <Ionicons name="arrow-back" size={24} color="rgba(255,255,255,0.8)" />
+              <Ionicons
+                name="arrow-back"
+                size={24}
+                color="rgba(255,255,255,0.8)"
+              />
             </Pressable>
-
-
           </View>
 
           {/* ── Bottom: White Card with Register Form ──────────────── */}
@@ -168,49 +190,112 @@ await register({
             <View style={styles.nameRow}>
               <View style={[styles.inputGroup, { flex: 1 }]}>
                 <Text style={styles.inputLabel}>First Name</Text>
-                <View style={[styles.inputWrap, errors.firstName && styles.inputError]}>
-                  <Ionicons name="person-outline" size={16} color="#8E93A8" style={styles.inputIcon} />
+                <View
+                  style={[
+                    styles.inputWrap,
+                    errors.firstName && styles.inputError,
+                  ]}
+                >
+                  <Ionicons
+                    name="person-outline"
+                    size={16}
+                    color="#8E93A8"
+                    style={styles.inputIcon}
+                  />
                   <TextInput
                     style={styles.input}
                     value={firstName}
-                    onChangeText={(t) => { setFirstName(t); clearError('firstName'); }}
+                    onChangeText={(t) => {
+                      setFirstName(t);
+                      clearError("firstName");
+                    }}
                     placeholder="First Name"
                     placeholderTextColor="#C4C8D8"
                     autoCapitalize="words"
                     returnKeyType="next"
                   />
                 </View>
-                {errors.firstName && <Text style={styles.errorText}>{errors.firstName}</Text>}
+                {errors.firstName && (
+                  <Text style={styles.errorText}>{errors.firstName}</Text>
+                )}
               </View>
 
               <View style={{ width: Spacing.sm }} />
 
               <View style={[styles.inputGroup, { flex: 1 }]}>
                 <Text style={styles.inputLabel}>Last Name</Text>
-                <View style={[styles.inputWrap, errors.lastName && styles.inputError]}>
+                <View
+                  style={[
+                    styles.inputWrap,
+                    errors.lastName && styles.inputError,
+                  ]}
+                >
                   <TextInput
                     style={[styles.input, { paddingLeft: 2 }]}
                     value={lastName}
-                    onChangeText={(t) => { setLastName(t); clearError('lastName'); }}
+                    onChangeText={(t) => {
+                      setLastName(t);
+                      clearError("lastName");
+                    }}
                     placeholder="Last Name"
                     placeholderTextColor="#C4C8D8"
                     autoCapitalize="words"
                     returnKeyType="next"
                   />
                 </View>
-                {errors.lastName && <Text style={styles.errorText}>{errors.lastName}</Text>}
+                {errors.lastName && (
+                  <Text style={styles.errorText}>{errors.lastName}</Text>
+                )}
               </View>
+            </View>
+
+            {/* ── ID Number ── */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>ID Number</Text>
+              <View
+                style={[styles.inputWrap, errors.idNumber && styles.inputError]}
+              >
+                <Ionicons
+                  name="card-outline"
+                  size={16}
+                  color="#8E93A8"
+                  style={styles.inputIcon}
+                />
+                <TextInput
+                  style={styles.input}
+                  value={idNumber}
+                  onChangeText={(t) => {
+                    setIdNumber(t);
+                    clearError("idNumber");
+                  }}
+                  placeholder="ID Number"
+                  placeholderTextColor="#C4C8D8"
+                  keyboardType="number-pad"
+                  returnKeyType="next"
+                />
+              </View>
+              {errors.idNumber && (
+                <Text style={styles.errorText}>{errors.idNumber}</Text>
+              )}
             </View>
 
             {/* ── School Email ── */}
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>School Email</Text>
-              <View style={[styles.inputWrap, errors.email && styles.inputError]}>
-                <Ionicons name="mail-outline" size={16} color="#8E93A8" style={styles.inputIcon} />
+              <View
+                style={[styles.inputWrap, errors.email && styles.inputError]}
+              >
+                <Ionicons
+                  name="mail-outline"
+                  size={16}
+                  color="#8E93A8"
+                  style={styles.inputIcon}
+                />
                 <TextInput
                   style={styles.input}
-                  value={email}
-                  onChangeText={(t) => { setEmail(t); clearError('email'); }}
+                  value={derivedEmail}
+                  editable={false}
+                  onChangeText={() => {}}
                   placeholder="School Email"
                   placeholderTextColor="#C4C8D8"
                   keyboardType="email-address"
@@ -218,25 +303,9 @@ await register({
                   returnKeyType="next"
                 />
               </View>
-              {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
-            </View>
-
-            {/* ── ID Number ── */}
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>ID Number</Text>
-              <View style={[styles.inputWrap, errors.idNumber && styles.inputError]}>
-                <Ionicons name="card-outline" size={16} color="#8E93A8" style={styles.inputIcon} />
-                <TextInput
-                  style={styles.input}
-                  value={idNumber}
-                  onChangeText={(t) => { setIdNumber(t); clearError('idNumber'); }}
-                  placeholder="ID Number"
-                  placeholderTextColor="#C4C8D8"
-                  keyboardType="number-pad"
-                  returnKeyType="next"
-                />
-              </View>
-              {errors.idNumber && <Text style={styles.errorText}>{errors.idNumber}</Text>}
+              {errors.email && (
+                <Text style={styles.errorText}>{errors.email}</Text>
+              )}
             </View>
 
             {/* ── Program Picker ── */}
@@ -246,24 +315,33 @@ await register({
                 style={[styles.inputWrap, errors.program && styles.inputError]}
                 onPress={() => setShowProgramPicker(!showProgramPicker)}
               >
-                <Ionicons name="school-outline" size={16} color="#8E93A8" style={styles.inputIcon} />
-                <Text style={[
-                  styles.pickerText,
-                  !selectedProgram && { color: '#C4C8D8' },
-                ]}>
-                  {selectedProgram || 'Select your program'}
+                <Ionicons
+                  name="school-outline"
+                  size={16}
+                  color="#8E93A8"
+                  style={styles.inputIcon}
+                />
+                <Text
+                  style={[
+                    styles.pickerText,
+                    !selectedProgram && { color: "#C4C8D8" },
+                  ]}
+                >
+                  {selectedProgram || "Select your program"}
                 </Text>
                 <Ionicons
-                  name={showProgramPicker ? 'chevron-up' : 'chevron-down'}
+                  name={showProgramPicker ? "chevron-up" : "chevron-down"}
                   size={18}
                   color="#8E93A8"
                 />
               </Pressable>
-              {errors.program && <Text style={styles.errorText}>{errors.program}</Text>}
+              {errors.program && (
+                <Text style={styles.errorText}>{errors.program}</Text>
+              )}
 
               {showProgramPicker && (
                 <View style={styles.pickerDropdown}>
-                  {PROGRAMS.map(prog => (
+                  {PROGRAMS.map((prog) => (
                     <Pressable
                       key={prog}
                       style={[
@@ -273,13 +351,16 @@ await register({
                       onPress={() => {
                         setSelectedProgram(prog);
                         setShowProgramPicker(false);
-                        clearError('program');
+                        clearError("program");
                       }}
                     >
-                      <Text style={[
-                        styles.pickerOptionText,
-                        selectedProgram === prog && styles.pickerOptionTextSelected,
-                      ]}>
+                      <Text
+                        style={[
+                          styles.pickerOptionText,
+                          selectedProgram === prog &&
+                            styles.pickerOptionTextSelected,
+                        ]}
+                      >
                         {prog}
                       </Text>
                       {selectedProgram === prog && (
@@ -295,44 +376,68 @@ await register({
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>Year Level</Text>
               <Pressable
-                style={[styles.inputWrap, errors.yearLevel && styles.inputError]}
+                style={[
+                  styles.inputWrap,
+                  errors.yearLevel && styles.inputError,
+                ]}
                 onPress={() => setShowYearPicker(!showYearPicker)}
               >
-                <Ionicons name="layers-outline" size={16} color="#8E93A8" style={styles.inputIcon} />
-                <Text style={[
-                  styles.pickerText,
-                  !selectedYearLevel && { color: '#C4C8D8' },
-                ]}>
-                  {selectedYearLevel ? `Year ${selectedYearLevel}` : 'Select your year level'}
+                <Ionicons
+                  name="layers-outline"
+                  size={16}
+                  color="#8E93A8"
+                  style={styles.inputIcon}
+                />
+                <Text
+                  style={[
+                    styles.pickerText,
+                    !selectedYearLevel && { color: "#C4C8D8" },
+                  ]}
+                >
+                  {selectedYearLevel
+                    ? `Year ${selectedYearLevel}`
+                    : "Select your year level"}
                 </Text>
                 <Ionicons
-                  name={showYearPicker ? 'chevron-up' : 'chevron-down'}
+                  name={showYearPicker ? "chevron-up" : "chevron-down"}
                   size={18}
                   color="#8E93A8"
                 />
               </Pressable>
-              {errors.yearLevel && <Text style={styles.errorText}>{errors.yearLevel}</Text>}
+              {errors.yearLevel && (
+                <Text style={styles.errorText}>{errors.yearLevel}</Text>
+              )}
 
               {showYearPicker && (
                 <View style={styles.pickerDropdown}>
-                  {YEAR_LEVELS.map(year => (
+                  {YEAR_LEVELS.map((year) => (
                     <Pressable
                       key={year}
                       style={[
                         styles.pickerOption,
-                        selectedYearLevel === year && styles.pickerOptionSelected,
+                        selectedYearLevel === year &&
+                          styles.pickerOptionSelected,
                       ]}
                       onPress={() => {
                         setSelectedYearLevel(year);
                         setShowYearPicker(false);
-                        clearError('yearLevel');
+                        clearError("yearLevel");
                       }}
                     >
-                      <Text style={[
-                        styles.pickerOptionText,
-                        selectedYearLevel === year && styles.pickerOptionTextSelected,
-                      ]}>
-                        {year === 1 ? '1st Year' : year === 2 ? '2nd Year' : year === 3 ? '3rd Year' : '4th Year'}
+                      <Text
+                        style={[
+                          styles.pickerOptionText,
+                          selectedYearLevel === year &&
+                            styles.pickerOptionTextSelected,
+                        ]}
+                      >
+                        {year === 1
+                          ? "1st Year"
+                          : year === 2
+                            ? "2nd Year"
+                            : year === 3
+                              ? "3rd Year"
+                              : "4th Year"}
                       </Text>
                       {selectedYearLevel === year && (
                         <Ionicons name="checkmark" size={18} color="#D4874D" />
@@ -346,34 +451,67 @@ await register({
             {/* ── Password ── */}
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>Password</Text>
-              <View style={[styles.inputWrap, errors.password && styles.inputError]}>
-                <Ionicons name="lock-closed-outline" size={16} color="#8E93A8" style={styles.inputIcon} />
+              <View
+                style={[styles.inputWrap, errors.password && styles.inputError]}
+              >
+                <Ionicons
+                  name="lock-closed-outline"
+                  size={16}
+                  color="#8E93A8"
+                  style={styles.inputIcon}
+                />
                 <TextInput
                   style={styles.input}
                   value={password}
-                  onChangeText={(t) => { setPassword(t); clearError('password'); }}
+                  onChangeText={(t) => {
+                    setPassword(t);
+                    clearError("password");
+                  }}
                   placeholder="Min. 6 characters"
                   placeholderTextColor="#C4C8D8"
                   secureTextEntry={!showPassword}
                   autoCapitalize="none"
                   returnKeyType="next"
                 />
-                <Pressable onPress={() => setShowPassword(!showPassword)} hitSlop={8} style={styles.eyeBtn}>
-                  <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={18} color="#8E93A8" />
+                <Pressable
+                  onPress={() => setShowPassword(!showPassword)}
+                  hitSlop={8}
+                  style={styles.eyeBtn}
+                >
+                  <Ionicons
+                    name={showPassword ? "eye-off-outline" : "eye-outline"}
+                    size={18}
+                    color="#8E93A8"
+                  />
                 </Pressable>
               </View>
-              {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
+              {errors.password && (
+                <Text style={styles.errorText}>{errors.password}</Text>
+              )}
             </View>
 
             {/* ── Confirm Password ── */}
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>Confirm Password</Text>
-              <View style={[styles.inputWrap, errors.confirmPassword && styles.inputError]}>
-                <Ionicons name="shield-checkmark-outline" size={16} color="#8E93A8" style={styles.inputIcon} />
+              <View
+                style={[
+                  styles.inputWrap,
+                  errors.confirmPassword && styles.inputError,
+                ]}
+              >
+                <Ionicons
+                  name="shield-checkmark-outline"
+                  size={16}
+                  color="#8E93A8"
+                  style={styles.inputIcon}
+                />
                 <TextInput
                   style={styles.input}
                   value={confirmPassword}
-                  onChangeText={(t) => { setConfirmPassword(t); clearError('confirmPassword'); }}
+                  onChangeText={(t) => {
+                    setConfirmPassword(t);
+                    clearError("confirmPassword");
+                  }}
                   placeholder="Re-enter your password"
                   placeholderTextColor="#C4C8D8"
                   secureTextEntry={!showConfirm}
@@ -381,11 +519,21 @@ await register({
                   returnKeyType="done"
                   onSubmitEditing={handleRegister}
                 />
-                <Pressable onPress={() => setShowConfirm(!showConfirm)} hitSlop={8} style={styles.eyeBtn}>
-                  <Ionicons name={showConfirm ? 'eye-off-outline' : 'eye-outline'} size={18} color="#8E93A8" />
+                <Pressable
+                  onPress={() => setShowConfirm(!showConfirm)}
+                  hitSlop={8}
+                  style={styles.eyeBtn}
+                >
+                  <Ionicons
+                    name={showConfirm ? "eye-off-outline" : "eye-outline"}
+                    size={18}
+                    color="#8E93A8"
+                  />
                 </Pressable>
               </View>
-              {errors.confirmPassword && <Text style={styles.errorText}>{errors.confirmPassword}</Text>}
+              {errors.confirmPassword && (
+                <Text style={styles.errorText}>{errors.confirmPassword}</Text>
+              )}
             </View>
 
             {/* ── Register Button ── */}
@@ -399,7 +547,7 @@ await register({
               ]}
             >
               <LinearGradient
-                colors={['#E8A87C', '#D4874D', '#C47035']}
+                colors={["#E8A87C", "#D4874D", "#C47035"]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={styles.registerBtnGradient}
@@ -414,8 +562,10 @@ await register({
 
             {/* ── Already have an account ── */}
             <View style={styles.bottomLink}>
-              <Text style={styles.bottomLinkText}>Already have an account? </Text>
-              <Pressable onPress={() => router.push('/(auth)/login')}>
+              <Text style={styles.bottomLinkText}>
+                Already have an account?{" "}
+              </Text>
+              <Pressable onPress={() => router.push("/(auth)/login")}>
                 <Text style={styles.bottomLinkAction}>Log In</Text>
               </Pressable>
             </View>
@@ -431,59 +581,59 @@ await register({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FDF5EF',
+    backgroundColor: "#FDF5EF",
   },
 
   // ── Top Section ──
   topSection: {
     height: 240,
-    overflow: 'hidden',
-    alignItems: 'center',
-    justifyContent: 'center',
+    overflow: "hidden",
+    alignItems: "center",
+    justifyContent: "center",
   },
   decorCircle1: {
-    position: 'absolute',
+    position: "absolute",
     width: 240,
     height: 240,
     borderRadius: 120,
-    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    backgroundColor: "rgba(255, 255, 255, 0.12)",
     top: -20,
     left: -50,
   },
   decorCircle2: {
-    position: 'absolute',
+    position: "absolute",
     width: 180,
     height: 180,
     borderRadius: 90,
-    backgroundColor: 'rgba(255, 255, 255, 0.10)',
+    backgroundColor: "rgba(255, 255, 255, 0.10)",
     top: 40,
     right: -30,
   },
   decorCircle3: {
-    position: 'absolute',
+    position: "absolute",
     width: 140,
     height: 140,
     borderRadius: 70,
-    backgroundColor: 'rgba(212, 135, 77, 0.08)',
+    backgroundColor: "rgba(212, 135, 77, 0.08)",
     bottom: 10,
     left: 60,
   },
   backBtn: {
-    position: 'absolute',
+    position: "absolute",
     top: 48,
     left: 20,
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: "rgba(255,255,255,0.2)",
+    alignItems: "center",
+    justifyContent: "center",
   },
   logoContainer: {
     width: 120,
     height: 120,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginTop: 16,
   },
   logo: {
@@ -494,13 +644,13 @@ const styles = StyleSheet.create({
   // ── Bottom Card ──
   bottomCard: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderTopLeftRadius: 36,
     borderTopRightRadius: 36,
     paddingHorizontal: Spacing.xl,
     paddingTop: Spacing.lg + Spacing.xs,
     paddingBottom: Spacing.lg,
-    shadowColor: '#D4874D',
+    shadowColor: "#D4874D",
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.08,
     shadowRadius: 20,
@@ -508,23 +658,23 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 28,
-    fontWeight: '800',
-    color: '#1A1D2E',
+    fontWeight: "800",
+    color: "#1A1D2E",
     letterSpacing: -0.5,
     marginBottom: 4,
   },
   subtitle: {
     fontSize: FontSizes.sm,
-    color: '#8E93A8',
+    color: "#8E93A8",
     lineHeight: 20,
     marginBottom: Spacing.md + Spacing.xs,
   },
 
   // ── General Error ──
   generalError: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FEF2F2',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FEF2F2",
     borderRadius: Radii.md,
     padding: Spacing.md,
     marginBottom: Spacing.md,
@@ -533,36 +683,36 @@ const styles = StyleSheet.create({
   generalErrorText: {
     flex: 1,
     fontSize: FontSizes.sm,
-    color: '#F87171',
-    fontWeight: '500',
+    color: "#F87171",
+    fontWeight: "500",
   },
   // ── Inputs ──
   nameRow: {
-    flexDirection: 'row',
+    flexDirection: "row",
   },
   inputGroup: {
     marginBottom: Spacing.md,
   },
   inputLabel: {
     fontSize: FontSizes.xs,
-    fontWeight: '600',
-    color: '#5A6078',
+    fontWeight: "600",
+    color: "#5A6078",
     marginBottom: 5,
-    textTransform: 'uppercase',
+    textTransform: "uppercase",
     letterSpacing: 0.5,
   },
   inputWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F8F9FC',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F8F9FC",
     borderRadius: Radii.md,
     borderWidth: 1.5,
-    borderColor: '#E8EAF0',
+    borderColor: "#E8EAF0",
     paddingHorizontal: Spacing.md,
     minHeight: 48,
   },
   inputError: {
-    borderColor: '#F87171',
+    borderColor: "#F87171",
   },
   inputIcon: {
     marginRight: Spacing.sm,
@@ -570,7 +720,7 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: FontSizes.md,
-    color: '#1A1D2E',
+    color: "#1A1D2E",
     paddingVertical: 12,
   },
   eyeBtn: {
@@ -578,82 +728,82 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 11,
-    color: '#F87171',
+    color: "#F87171",
     marginTop: 3,
-    fontWeight: '500',
+    fontWeight: "500",
   },
 
   // ── Program Picker ──
   pickerText: {
     flex: 1,
     fontSize: FontSizes.md,
-    color: '#1A1D2E',
+    color: "#1A1D2E",
     paddingVertical: 12,
   },
   pickerDropdown: {
     marginTop: Spacing.xs,
-    backgroundColor: '#F8F9FC',
+    backgroundColor: "#F8F9FC",
     borderRadius: Radii.md,
     borderWidth: 1,
-    borderColor: '#E8EAF0',
-    overflow: 'hidden',
+    borderColor: "#E8EAF0",
+    overflow: "hidden",
   },
   pickerOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: Spacing.md,
     paddingVertical: 13,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#E8EAF0',
+    borderBottomColor: "#E8EAF0",
   },
   pickerOptionSelected: {
-    backgroundColor: '#FDF0E6',
+    backgroundColor: "#FDF0E6",
   },
   pickerOptionText: {
     fontSize: FontSizes.md,
-    color: '#1A1D2E',
-    fontWeight: '500',
+    color: "#1A1D2E",
+    fontWeight: "500",
   },
   pickerOptionTextSelected: {
-    color: '#D4874D',
-    fontWeight: '700',
+    color: "#D4874D",
+    fontWeight: "700",
   },
 
   // ── Register Button ──
   registerBtnWrap: {
-    width: '100%',
+    width: "100%",
     borderRadius: Radii.xl,
-    overflow: 'hidden',
+    overflow: "hidden",
     marginTop: Spacing.sm,
     marginBottom: Spacing.lg,
   },
   registerBtnGradient: {
     paddingVertical: 16,
-    alignItems: 'center',
+    alignItems: "center",
     borderRadius: Radii.xl,
   },
   registerBtnText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: FontSizes.lg,
-    fontWeight: '700',
+    fontWeight: "700",
     letterSpacing: 0.3,
   },
 
   // ── Bottom Link ──
   bottomLink: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
   },
   bottomLinkText: {
     fontSize: FontSizes.sm,
-    color: '#8E93A8',
+    color: "#8E93A8",
   },
   bottomLinkAction: {
     fontSize: FontSizes.sm,
-    color: '#D4874D',
-    fontWeight: '600',
-    textDecorationLine: 'underline',
+    color: "#D4874D",
+    fontWeight: "600",
+    textDecorationLine: "underline",
   },
 });
