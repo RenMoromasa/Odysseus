@@ -108,6 +108,21 @@ function studentPlanReducer(state: StudentPlanState, action: StudentPlanAction):
         ),
       };
     }
+    case 'SET_CUSTOM_NAME': {
+      return {
+        ...state,
+        semesters: state.semesters.map(sem =>
+          sem.id === action.semesterId
+            ? {
+                ...sem,
+                courses: sem.courses.map(c =>
+                  c.courseId === action.courseId ? { ...c, customName: action.customName } : c
+                ),
+              }
+            : sem
+        ),
+      };
+    }
     case 'SET_SEMESTER_STATUS': {
       return {
         ...state,
@@ -145,9 +160,9 @@ function studentPlanReducer(state: StudentPlanState, action: StudentPlanAction):
     }
     case 'RESET_PLAN': {
       return {
-        ...INITIAL_STATE,
-        studentInfo: state.studentInfo,
+        ...state,
         semesters: action.semesters,
+        customTags: [],
       };
     }
     default:
@@ -171,6 +186,7 @@ interface StudentPlanContextType {
   getCourseGrade: (courseId: string) => string | undefined;
   getCourseSemester: (courseId: string) => Semester | undefined;
   forecastGPA: (hypotheticalGrades: Record<string, string>) => number;
+  estimateGraduation: () => { year: number; semester: number; label: string; delayed: boolean; onTrackLabel: string };
 }
 
 const StudentPlanContext = createContext<StudentPlanContextType | null>(null);
@@ -290,7 +306,7 @@ export function StudentPlanProvider({ children }: { children: React.ReactNode })
 
   const isCourseCompleted = useCallback((courseId: string) => {
     return state.semesters.some(
-      sem => sem.status === 'completed' && sem.courses.some(c => c.courseId === courseId && c.grade && c.grade !== '5.00')
+      sem => sem.status === 'completed' && sem.courses.some(c => c.courseId === courseId && c.grade && c.grade !== '5.00' && c.grade !== 'NC')
     );
   }, [state.semesters]);
 
@@ -317,11 +333,11 @@ export function StudentPlanProvider({ children }: { children: React.ReactNode })
         const course = catalog.find(c => c.id === sc.courseId);
         if (!course) continue;
         allCredits += course.credits;
-        const gradeNum = sc.grade ? parseFloat(sc.grade) : NaN;
-        if (sc.grade && !isNaN(gradeNum)) {
-          totalPoints += gradeNum * course.credits;
+        const gradeVal = sc.grade === 'NC' ? 5.00 : sc.grade ? parseFloat(sc.grade) : NaN;
+        if (sc.grade && !isNaN(gradeVal)) {
+          totalPoints += gradeVal * course.credits;
           totalCredits += course.credits;
-          if (sc.grade !== '5.00') {
+          if (sc.grade !== '5.00' && sc.grade !== 'NC') {
             completedCredits += course.credits;
           }
         }
@@ -343,9 +359,9 @@ export function StudentPlanProvider({ children }: { children: React.ReactNode })
     let credits = 0;
     for (const sc of sem.courses) {
       const course = catalog.find(c => c.id === sc.courseId);
-      const gradeNum = sc.grade ? parseFloat(sc.grade) : NaN;
-      if (!course || !sc.grade || isNaN(gradeNum)) continue;
-      points += gradeNum * course.credits;
+      const gradeVal = sc.grade === 'NC' ? 5.00 : sc.grade ? parseFloat(sc.grade) : NaN;
+      if (!course || !sc.grade || isNaN(gradeVal)) continue;
+      points += gradeVal * course.credits;
       credits += course.credits;
     }
     return credits > 0 ? points / credits : 0;
@@ -379,9 +395,9 @@ export function StudentPlanProvider({ children }: { children: React.ReactNode })
         const course = catalog.find(c => c.id === sc.courseId);
         if (!course) continue;
         const grade = hypotheticalGrades[sc.courseId] || sc.grade;
-        const gradeNum = grade ? parseFloat(grade) : NaN;
-        if (grade && !isNaN(gradeNum)) {
-          totalPoints += gradeNum * course.credits;
+        const gradeVal = grade === 'NC' ? 5.00 : grade ? parseFloat(grade) : NaN;
+        if (grade && !isNaN(gradeVal)) {
+          totalPoints += gradeVal * course.credits;
           totalCredits += course.credits;
         }
       }
@@ -390,14 +406,134 @@ export function StudentPlanProvider({ children }: { children: React.ReactNode })
     return totalCredits > 0 ? totalPoints / totalCredits : 0;
   }, [state.semesters, catalog]);
 
+  // ─── Graduation Estimation ─────────────────────────────────────────────────
+  const estimateGraduation = useCallback(() => {
+    if (catalog.length === 0 || state.semesters.length === 0) {
+      return { year: 0, semester: 0, label: '—', delayed: false, onTrackLabel: '—' };
+    }
+
+    // 1. Build set of passed course IDs
+    const passedIds = new Set<string>();
+    for (const sem of state.semesters) {
+      for (const sc of sem.courses) {
+        if (sc.grade && sc.grade !== '5.00' && sc.grade !== 'NC') passedIds.add(sc.courseId);
+      }
+    }
+
+    // 2. Courses still needed
+    const remaining = catalog.filter(c => !passedIds.has(c.id));
+    if (remaining.length === 0) {
+      // Already done
+      const lastSem = state.semesters[state.semesters.length - 1];
+      return { year: lastSem.year, semester: lastSem.term, label: 'Completed!', delayed: false, onTrackLabel: 'Graduated' };
+    }
+
+    // 3. Find the longest prerequisite chain depth among remaining courses
+    //    This tells us the minimum number of sequential semesters needed
+    const courseMap = new Map(catalog.map(c => [c.id, c]));
+    const chainCache = new Map<string, number>();
+
+    function chainDepth(courseId: string, visited: Set<string>): number {
+      if (chainCache.has(courseId)) return chainCache.get(courseId)!;
+      if (visited.has(courseId)) return 0; // cycle guard
+      visited.add(courseId);
+
+      const course = courseMap.get(courseId);
+      if (!course) return 0;
+
+      // Only count prerequisites that are NOT yet passed
+      const unmetPrereqs = course.prerequisites.filter(id => !passedIds.has(id));
+      if (unmetPrereqs.length === 0) {
+        chainCache.set(courseId, 1);
+        return 1;
+      }
+
+      let maxChildDepth = 0;
+      for (const prereqId of unmetPrereqs) {
+        maxChildDepth = Math.max(maxChildDepth, chainDepth(prereqId, visited));
+      }
+
+      const depth = maxChildDepth + 1;
+      chainCache.set(courseId, depth);
+      return depth;
+    }
+
+    let longestChain = 0;
+    for (const c of remaining) {
+      longestChain = Math.max(longestChain, chainDepth(c.id, new Set()));
+    }
+
+    // 4. Count remaining regular semesters (term 1 & 2, skip summer/term 3)
+    const futureSems = state.semesters.filter(s => {
+      if (s.status === 'completed') return false;
+      // Only count regular semesters (term 1 and 2)
+      return s.term === 1 || s.term === 2;
+    });
+
+    // The nominal last semester in the plan
+    const allRegularSems = state.semesters.filter(s => s.term === 1 || s.term === 2);
+    const lastPlannedSem = allRegularSems[allRegularSems.length - 1];
+
+    // 5. If the longest prereq chain fits within remaining semesters, on track
+    //    Otherwise, graduation is delayed
+    const semsNeeded = Math.max(longestChain, Math.ceil(remaining.length / 8)); // ~8 courses per sem max
+    const semsAvailable = futureSems.length;
+
+    let gradYear: number;
+    let gradTerm: number;
+    let delayed = false;
+
+    if (semsNeeded <= semsAvailable && lastPlannedSem) {
+      // On track — graduate at end of last planned semester
+      gradYear = lastPlannedSem.year;
+      gradTerm = lastPlannedSem.term;
+    } else {
+      // Delayed — need extra semesters beyond the plan
+      delayed = true;
+      const extraSems = semsNeeded - semsAvailable;
+      if (lastPlannedSem) {
+        let yr = lastPlannedSem.year;
+        let tm = lastPlannedSem.term;
+        for (let i = 0; i < extraSems; i++) {
+          if (tm === 1) {
+            tm = 2;
+          } else {
+            tm = 1;
+            yr += 1;
+          }
+        }
+        gradYear = yr;
+        gradTerm = tm;
+      } else {
+        gradYear = state.studentInfo.yearLevel + Math.ceil(semsNeeded / 2);
+        gradTerm = semsNeeded % 2 === 0 ? 2 : 1;
+      }
+    }
+
+    // 6. Convert to calendar year estimate
+    //    Assuming Year 1 started in the current academic year minus (yearLevel - 1)
+    const currentCalendarYear = new Date().getFullYear();
+    const startYear = currentCalendarYear - (state.studentInfo.yearLevel - 1);
+    const estimatedCalendarYear = startYear + gradYear;
+    const termLabel = gradTerm === 1 ? '1st Sem' : '2nd Sem';
+
+    const label = `~${termLabel} ${estimatedCalendarYear}`;
+    const onTrackLabel = delayed ? 'Delayed' : 'On Track';
+
+    return { year: gradYear, semester: gradTerm, label, delayed, onTrackLabel };
+  }, [catalog, state.semesters, state.studentInfo.yearLevel]);
+
   const value = useMemo(() => ({
     state, dispatch, catalog, loading,
     getCourse, getAllTags, getTagById,
     calculateGPA, getSemesterGPA, checkPrerequisiteConflicts,
     isCourseCompleted, getCourseGrade, getCourseSemester, forecastGPA,
+    estimateGraduation,
   }), [state, dispatch, catalog, loading, getCourse, getAllTags, getTagById,
        calculateGPA, getSemesterGPA, checkPrerequisiteConflicts,
-       isCourseCompleted, getCourseGrade, getCourseSemester, forecastGPA]);
+       isCourseCompleted, getCourseGrade, getCourseSemester, forecastGPA,
+       estimateGraduation]);
+
 
   return (
     <StudentPlanContext.Provider value={value}>

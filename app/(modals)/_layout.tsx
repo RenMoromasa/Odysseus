@@ -19,7 +19,6 @@ export default function ModalsLayout() {
       <Stack.Screen name="add-course-modal" />
       <Stack.Screen name="manage-tags-modal" />
       <Stack.Screen name="confirm-reset-modal" />
-      <Stack.Screen name="lacking-courses-modal" />
     </Stack>
   );
 }

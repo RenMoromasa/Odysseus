@@ -6,6 +6,7 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useStudentPlan } from '@/hooks/use-student-plan';
 import { AppColors, Spacing, FontSizes, Radii } from '@/constants/theme';
 import { fetchSemesterTemplate } from '@/services/catalog';
+import { CustomAlert } from '@/components/ui/custom-alert';
 
 export default function ConfirmResetModal() {
   const scheme = useColorScheme() ?? 'dark';
@@ -13,17 +14,24 @@ export default function ConfirmResetModal() {
   const router = useRouter();
   const { state, dispatch } = useStudentPlan();
   const [resetting, setResetting] = useState(false);
+  const [errorAlert, setErrorAlert] = useState<string | null>(null);
 
   const handleReset = async () => {
     setResetting(true);
     try {
       const freshSemesters = await fetchSemesterTemplate(state.studentInfo.program);
+      if (!freshSemesters || freshSemesters.length === 0) {
+        setErrorAlert('Could not load fresh semester template. Please try again.');
+        setResetting(false);
+        return;
+      }
       dispatch({ type: 'RESET_PLAN', semesters: freshSemesters });
+      router.back();
     } catch (err) {
       console.error('Failed to reset plan:', err);
+      setErrorAlert('Reset failed. Please check your connection and try again.');
     } finally {
       setResetting(false);
-      router.back();
     }
   };
 
@@ -61,6 +69,17 @@ export default function ConfirmResetModal() {
           </Pressable>
         </View>
       </View>
+
+      {/* Error alert */}
+      <CustomAlert
+        visible={!!errorAlert}
+        title="Error"
+        message={errorAlert ?? ''}
+        icon="alert-circle"
+        iconColor={colors.danger}
+        buttons={[{ text: 'OK', style: 'default' }]}
+        onDismiss={() => setErrorAlert(null)}
+      />
     </View>
   );
 }

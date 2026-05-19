@@ -123,10 +123,17 @@ export default function AddCourseModal() {
           <View style={styles.courseList}>
             {availableCourses.length === 0 ? (
               <View style={styles.empty}>
-                <Ionicons name="checkmark-done-circle" size={36} color={colors.textMuted} />
-                <Text style={[styles.emptyText, { color: colors.textMuted }]}>
-                  All courses are already planned!
+                <Ionicons name="checkmark-done-circle" size={36} color={colors.accent} />
+                <Text style={[styles.emptyText, { color: colors.text }]}>
+                  {search.trim()
+                    ? 'No matching courses found'
+                    : 'All courses are already in your plan!'}
                 </Text>
+                {!search.trim() && (
+                  <Text style={[styles.emptyHint, { color: colors.textMuted }]}>
+                    Use Edit mode in the Planner to drop or move courses between semesters.
+                  </Text>
+                )}
               </View>
             ) : (
               availableCourses.map(course => {
@@ -179,6 +186,16 @@ export default function AddCourseModal() {
           </View>
         )}
 
+        {/* Validation hint */}
+        {selectedCourseIds.size > 0 && !selectedSemesterId && (
+          <View style={[styles.hintBanner, { backgroundColor: colors.warningSoft, borderColor: colors.warning + '40' }]}>
+            <Ionicons name="arrow-up-circle" size={18} color={colors.warning} />
+            <Text style={[styles.hintText, { color: colors.warning }]}>
+              Select a semester above to continue
+            </Text>
+          </View>
+        )}
+
         {/* Add button */}
         <Pressable
           style={[
@@ -193,9 +210,13 @@ export default function AddCourseModal() {
         >
           <Ionicons name="add-circle" size={20} color={canAdd ? '#FFF' : colors.textMuted} />
           <Text style={[styles.addBtnText, { color: canAdd ? '#FFF' : colors.textMuted }]}>
-            {selectedCourseIds.size > 1
-              ? `Add ${selectedCourseIds.size} Courses to Plan`
-              : 'Add to Plan'}
+            {!selectedSemesterId
+              ? 'Select a semester first'
+              : selectedCourseIds.size > 1
+                ? `Add ${selectedCourseIds.size} Courses to Plan`
+                : selectedCourseIds.size === 1
+                  ? 'Add 1 Course to Plan'
+                  : 'Select courses to add'}
           </Text>
         </Pressable>
       </ScrollView>
@@ -223,7 +244,8 @@ const styles = StyleSheet.create({
   empty: {
     alignItems: 'center', paddingVertical: Spacing.xl, gap: Spacing.sm,
   },
-  emptyText: { fontSize: FontSizes.sm },
+  emptyText: { fontSize: FontSizes.md, fontWeight: '600' },
+  emptyHint: { fontSize: FontSizes.sm, textAlign: 'center', lineHeight: 20, marginTop: 4 },
   courseItem: {
     flexDirection: 'row', alignItems: 'center', borderRadius: Radii.md,
     borderWidth: 1, overflow: 'hidden',
@@ -246,4 +268,10 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xl,
   },
   addBtnText: { fontSize: FontSizes.md, fontWeight: '700' },
+  hintBanner: {
+    flexDirection: 'row', alignItems: 'center', gap: Spacing.sm,
+    padding: Spacing.md, borderRadius: Radii.md, borderWidth: 1,
+    marginBottom: Spacing.sm,
+  },
+  hintText: { fontSize: FontSizes.sm, fontWeight: '600', flex: 1 },
 });

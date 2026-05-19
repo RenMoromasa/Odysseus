@@ -4,12 +4,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { AppColors, Radii, Spacing, FontSizes } from '@/constants/theme';
 import { TagBadge } from './tag-badge';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { Course, Tag } from '@/constants/types';
+import { Course, Tag, isFailingGrade, isPassingGrade } from '@/constants/types';
 
 interface CourseCardProps {
   course: Course;
   tag?: Tag;
   grade?: string;
+  customName?: string;
   compact?: boolean;
   showPrereqWarning?: boolean;
   onPress?: () => void;
@@ -17,7 +18,7 @@ interface CourseCardProps {
 }
 
 export function CourseCard({
-  course, tag, grade, compact, showPrereqWarning, onPress, onLongPress,
+  course, tag, grade, customName, compact, showPrereqWarning, onPress, onLongPress,
 }: CourseCardProps) {
   const scheme = useColorScheme() ?? 'dark';
   const colors = AppColors[scheme];
@@ -45,7 +46,7 @@ export function CourseCard({
           <View style={styles.headerLeft}>
             <Text style={[styles.code, { color: colors.textSecondary }]}>{course.code}</Text>
             <Text style={[styles.name, { color: colors.text }]} numberOfLines={compact ? 1 : 2}>
-              {course.name}
+              {customName || course.name}
             </Text>
           </View>
           <View style={styles.headerRight}>
@@ -65,8 +66,18 @@ export function CourseCard({
             </View>
             <View style={styles.meta}>
               {grade && (
-                <View style={[styles.gradeBadge, { backgroundColor: colors.successSoft }]}>
-                  <Text style={[styles.gradeText, { color: colors.success }]}>{grade}</Text>
+                <View style={[styles.gradeBadge, {
+                  backgroundColor: grade === 'NC' ? colors.warningSoft
+                    : grade === '5.00' ? colors.dangerSoft
+                    : isPassingGrade(grade) ? colors.successSoft
+                    : colors.surfaceLight,
+                }]}>
+                  <Text style={[styles.gradeText, {
+                    color: grade === 'NC' ? colors.warning
+                      : grade === '5.00' ? colors.danger
+                      : isPassingGrade(grade) ? colors.success
+                      : colors.textMuted,
+                  }]}>{grade}</Text>
                 </View>
               )}
               {showPrereqWarning && (
