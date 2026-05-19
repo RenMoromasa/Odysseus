@@ -1,7 +1,7 @@
-import { initializeApp } from 'firebase/app';
-import { initializeAuth, getReactNativePersistence } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { initializeApp } from 'firebase/app';
+import { getReactNativePersistence, initializeAuth } from 'firebase/auth';
+import { getDocs, getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey: 'AIzaSyBeMK3VvE-1H0GeoCCgHdgZt7gYKUq00eM',
@@ -19,3 +19,8 @@ export const auth = initializeAuth(app, {
 });
 export const db = getFirestore(app);
 export default app;
+
+const fetchCourses = async (programId: 'BSCS' | 'BSIS' | 'BSIT') => {
+  const snap = await getDocs(collection(db, 'programs', programId, 'courses'));
+  return snap.docs.map(doc => doc.data() as Course);
+};
