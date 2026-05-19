@@ -18,7 +18,7 @@ export default function DashboardScreen() {
   const router = useRouter();
   const {
     state, catalog, getCourse, getTagById, calculateGPA,
-    checkPrerequisiteConflicts, isCourseCompleted,
+    checkPrerequisiteConflicts, isCourseCompleted, estimateGraduation,
   } = useStudentPlan();
 
   const gpaData = calculateGPA();
@@ -36,7 +36,7 @@ export default function DashboardScreen() {
     const passedIds = new Set<string>();
     for (const sem of state.semesters) {
       for (const sc of sem.courses) {
-        if (sc.grade && sc.grade !== '5.00') passedIds.add(sc.courseId);
+        if (sc.grade && sc.grade !== '5.00' && sc.grade !== 'NC') passedIds.add(sc.courseId);
       }
     }
     let ready = 0;
@@ -75,6 +75,8 @@ export default function DashboardScreen() {
   const progressPercent = gpaData.totalCredits > 0
     ? Math.round((gpaData.completedCredits / gpaData.totalCredits) * 100)
     : 0;
+
+  const gradEstimate = estimateGraduation();
 
   return (
     <TabEnterAnimation style={[styles.container, { backgroundColor: colors.background }]}>
@@ -137,7 +139,7 @@ export default function DashboardScreen() {
 
         {/* Graduation Progress Card */}
         <Pressable
-          onPress={() => lackingSummary.total > 0 ? router.push('/(modals)/lacking-courses-modal') : null}
+          onPress={() => lackingSummary.total > 0 ? router.push('/(tabs)/lacking') : null}
           style={({ pressed }) => [lackingSummary.total > 0 && pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] }]}
         >
           <GlassCard style={styles.gradCard}>
@@ -151,6 +153,38 @@ export default function DashboardScreen() {
                 <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
               )}
             </View>
+
+            {/* Estimated graduation */}
+            {gradEstimate.label !== '—' && (
+              <View style={styles.gradEstimateRow}>
+                <View style={styles.gradEstimateLeft}>
+                  <Ionicons name="calendar-outline" size={14} color={colors.textSecondary} />
+                  <Text style={[styles.gradEstimateLabel, { color: colors.textSecondary }]}>
+                    Est. Graduation
+                  </Text>
+                </View>
+                <View style={styles.gradEstimateRight}>
+                  <Text style={[styles.gradEstimateValue, { color: colors.text }]}>
+                    {gradEstimate.label}
+                  </Text>
+                  <View style={[
+                    styles.gradEstimateBadge,
+                    { backgroundColor: gradEstimate.delayed ? colors.warningSoft : colors.accentSoft },
+                  ]}>
+                    <View style={[
+                      styles.gradEstimateDot,
+                      { backgroundColor: gradEstimate.delayed ? colors.warning : colors.accent },
+                    ]} />
+                    <Text style={[
+                      styles.gradEstimateBadgeText,
+                      { color: gradEstimate.delayed ? colors.warning : colors.accent },
+                    ]}>
+                      {gradEstimate.onTrackLabel}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            )}
 
             {/* Units progress bar */}
             <View style={styles.gradUnitsRow}>
@@ -397,6 +431,21 @@ const styles = StyleSheet.create({
   gradLegendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   gradLegendDot: { width: 8, height: 8, borderRadius: 4 },
   gradLegendText: { fontSize: FontSizes.xs, fontWeight: '500' },
+  // Graduation estimate
+  gradEstimateRow: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    marginBottom: Spacing.md,
+  },
+  gradEstimateLeft: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  gradEstimateLabel: { fontSize: FontSizes.xs, fontWeight: '500' },
+  gradEstimateRight: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
+  gradEstimateValue: { fontSize: FontSizes.sm, fontWeight: '700' },
+  gradEstimateBadge: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    paddingHorizontal: 8, paddingVertical: 2, borderRadius: Radii.full,
+  },
+  gradEstimateDot: { width: 6, height: 6, borderRadius: 3 },
+  gradEstimateBadgeText: { fontSize: 10, fontWeight: '700' },
   warningBanner: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -448,7 +497,6 @@ const styles = StyleSheet.create({
     width: 56, height: 56, borderRadius: 28,
     alignItems: 'center', justifyContent: 'center',
     elevation: 8,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3, shadowRadius: 8,
   },
 });

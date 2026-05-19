@@ -10,7 +10,6 @@ import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 
 import {
-  Alert,
   Pressable,
   ScrollView,
   StatusBar,
@@ -18,6 +17,7 @@ import {
   Text,
   View
 } from 'react-native';
+import { CustomAlert } from '@/components/ui/custom-alert';
 
 export default function ProfileScreen() {
   const scheme = useColorScheme() ?? 'dark';
@@ -25,23 +25,14 @@ export default function ProfileScreen() {
   const router = useRouter();
   const { state, calculateGPA } = useStudentPlan();
   const { logout, profile } = useAuth();
+  const [logoutAlert, setLogoutAlert] = useState(false);
 
-  const handleLogout = () => {
-    Alert.alert(
-      'Sign Out',
-      'Are you sure you want to sign out?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Sign Out',
-          style: 'destructive',
-          onPress: async () => {
-            await logout();
-            router.replace('/(auth)/welcome');
-          },
-        },
-      ]
-    );
+  const handleLogout = () => setLogoutAlert(true);
+
+  const confirmLogout = async () => {
+    setLogoutAlert(false);
+    await logout();
+    router.replace('/(auth)/welcome');
   };
 
   const gpaData = calculateGPA();
@@ -222,6 +213,20 @@ export default function ProfileScreen() {
 
         <View style={{ height: 100 }} />
       </ScrollView>
+
+      {/* Logout confirmation */}
+      <CustomAlert
+        visible={logoutAlert}
+        title="Sign Out"
+        message="Are you sure you want to sign out?"
+        icon="log-out-outline"
+        iconColor={colors.danger}
+        buttons={[
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Sign Out', style: 'destructive', onPress: confirmLogout },
+        ]}
+        onDismiss={() => setLogoutAlert(false)}
+      />
 
       {/* Scroll-fade overlay */}
       <ScrollFade color={colors.background} />

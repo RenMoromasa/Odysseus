@@ -267,12 +267,15 @@ export default function CoursesScreen() {
           filteredCourses.map(course => {
             const tag = getTagById(course.tags[0]);
             const grade = getCourseGrade(course.id);
+            const sem = state.semesters.find(s => s.courses.some(c => c.courseId === course.id));
+            const customName = sem?.courses.find(c => c.courseId === course.id)?.customName;
             return (
               <CourseCard
                 key={course.id}
                 course={course}
                 tag={tag}
                 grade={grade}
+                customName={customName}
                 onPress={() =>
                   router.push({
                     pathname: '/(modals)/course-detail-modal',
@@ -354,12 +357,5 @@ const styles = StyleSheet.create({
     borderRadius: Radii.md, borderWidth: 1,
     marginBottom: Spacing.sm,
   },
-  semBannerText: { fontSize: FontSizes.xs, fontWeight: '700' },
-
-  // Empty
-  empty: {
-    alignItems: 'center', justifyContent: 'center',
-    paddingVertical: Spacing.xxl * 2, gap: Spacing.md,
-  },
-  emptyText: { fontSize: FontSizes.md, fontWeight: '500' },
+  semBannerText: { fontSize: FontSizes.sm, fontWeight: '600' },
 });

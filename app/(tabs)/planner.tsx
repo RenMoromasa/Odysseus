@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, Pressable, Modal, StatusBar, Alert,
+  View, Text, StyleSheet, ScrollView, Pressable, Modal, StatusBar,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -10,6 +10,7 @@ import { AppColors, Spacing, FontSizes, Radii } from '@/constants/theme';
 import { TagBadge } from '@/components/ui/tag-badge';
 import { ScrollFade } from '@/components/ui/scroll-fade';
 import { TabEnterAnimation } from '@/components/ui/tab-enter-animation';
+import { CustomAlert } from '@/components/ui/custom-alert';
 
 export default function PlannerScreen() {
   const scheme = useColorScheme() ?? 'dark';
@@ -64,10 +65,10 @@ export default function PlannerScreen() {
   // ─── Edit mode (batch drop) ─────────────────────────────────────────────────
   const [editMode, setEditMode] = useState(false);
   const [selectedForDrop, setSelectedForDrop] = useState<Set<string>>(new Set());
+  const [dropAlert, setDropAlert] = useState<{ visible: boolean; names: string[] }>({ visible: false, names: [] });
 
   const toggleEditMode = () => {
     if (editMode) {
-      // Exiting edit mode — clear selections
       setSelectedForDrop(new Set());
     }
     setEditMode(!editMode);
@@ -85,35 +86,21 @@ export default function PlannerScreen() {
 
   const handleBatchDrop = () => {
     if (selectedForDrop.size === 0) return;
-
     const courseNames = Array.from(selectedForDrop).map(key => {
       const courseId = key.split('::')[1];
       return getCourse(courseId)?.code ?? courseId;
     });
+    setDropAlert({ visible: true, names: courseNames });
+  };
 
-    Alert.alert(
-      'Drop Courses',
-      `Are you sure you want to drop ${selectedForDrop.size} course${selectedForDrop.size > 1 ? 's' : ''}?\n\n${courseNames.join(', ')}`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Drop',
-          style: 'destructive',
-          onPress: () => {
-            for (const key of selectedForDrop) {
-              const [semesterId, courseId] = key.split('::');
-              dispatch({
-                type: 'REMOVE_COURSE_FROM_SEMESTER',
-                semesterId,
-                courseId,
-              });
-            }
-            setSelectedForDrop(new Set());
-            setEditMode(false);
-          },
-        },
-      ]
-    );
+  const confirmDrop = () => {
+    for (const key of selectedForDrop) {
+      const [semesterId, courseId] = key.split('::');
+      dispatch({ type: 'REMOVE_COURSE_FROM_SEMESTER', semesterId, courseId });
+    }
+    setSelectedForDrop(new Set());
+    setEditMode(false);
+    setDropAlert({ visible: false, names: [] });
   };
 
   // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -350,10 +337,14 @@ export default function PlannerScreen() {
                                 <View style={styles.courseRight}>
                                   {sc.grade && (
                                     <View style={[styles.gradePill, {
-                                      backgroundColor: sc.grade === '5.00' ? colors.dangerSoft : colors.successSoft,
+                                      backgroundColor: sc.grade === 'NC' ? colors.warningSoft
+                                        : sc.grade === '5.00' ? colors.dangerSoft
+                                        : colors.successSoft,
                                     }]}>
                                       <Text style={[styles.gradeText, {
-                                        color: sc.grade === '5.00' ? colors.danger : colors.success,
+                                        color: sc.grade === 'NC' ? colors.warning
+                                          : sc.grade === '5.00' ? colors.danger
+                                          : colors.success,
                                       }]}>{sc.grade}</Text>
                                     </View>
                                   )}
@@ -363,7 +354,7 @@ export default function PlannerScreen() {
                                 </View>
                               </View>
                               <Text style={[styles.courseName, { color: colors.text }]} numberOfLines={1}>
-                                {course.name}
+                                {sc.customName || course.name}
                               </Text>
                               <View style={styles.courseBottomRow}>
                                 <Text style={[styles.courseCredits, { color: colors.textMuted }]}>
@@ -484,6 +475,20 @@ export default function PlannerScreen() {
           </Pressable>
         </Pressable>
       </Modal>
+
+      {/* Drop confirmation alert */}
+      <CustomAlert
+        visible={dropAlert.visible}
+        title="Drop Courses"
+        message={`Are you sure you want to drop ${dropAlert.names.length} course${dropAlert.names.length !== 1 ? 's' : ''}?\n\n${dropAlert.names.join(', ')}`}
+        icon="trash-outline"
+        iconColor={colors.danger}
+        buttons={[
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Drop', style: 'destructive', onPress: confirmDrop },
+        ]}
+        onDismiss={() => setDropAlert({ visible: false, names: [] })}
+      />
 
       {/* Scroll-fade overlay */}
       <ScrollFade color={colors.background} />

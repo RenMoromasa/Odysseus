@@ -33,7 +33,7 @@ export default function LackingScreen() {
     const ids = new Set<string>();
     for (const sem of state.semesters) {
       for (const sc of sem.courses) {
-        if (sc.grade && sc.grade !== '5.00') ids.add(sc.courseId);
+        if (sc.grade && sc.grade !== '5.00' && sc.grade !== 'NC') ids.add(sc.courseId);
       }
     }
     return ids;
@@ -405,6 +405,5 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.xxl * 2,
     gap: Spacing.md,
   },
-  emptyTitle: { fontSize: FontSizes.lg, fontWeight: '700' },
-  emptySubtitle: { fontSize: FontSizes.sm, fontWeight: '500', textAlign: 'center' },
+  emptySubtitle: { fontSize: FontSizes.sm, fontWeight: '500', textAlign: 'center', lineHeight: 20 },
 });
