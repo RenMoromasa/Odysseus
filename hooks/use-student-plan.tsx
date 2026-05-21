@@ -6,6 +6,7 @@ import {
   StudentPlanState,
   Tag,
 } from '@/constants/types';
+import { TagColors } from '@/constants/theme';
 import { useAuth } from '@/hooks/use-auth';
 import {
   fetchCourseCatalog,
@@ -14,6 +15,7 @@ import {
 } from '@/services/catalog';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '@/config/firebase';
+import { getPHDate } from '@/utils/semester';
 import React, {
   createContext,
   useCallback,
@@ -198,7 +200,7 @@ interface StudentPlanContextType {
   getCourseGrade: (courseId: string) => string | undefined;
   getCourseSemester: (courseId: string) => Semester | undefined;
   forecastGPA: (hypotheticalGrades: Record<string, string>) => number;
-  estimateGraduation: () => { year: number; semester: number; label: string; delayed: boolean; onTrackLabel: string };
+  estimateGraduation: () => { year: number; semester: number; label: string; delayed: boolean; onTrackLabel: string; remainingTime: string };
 }
 
 const StudentPlanContext = createContext<StudentPlanContextType | null>(null);
@@ -308,13 +310,22 @@ export function StudentPlanProvider({ children }: { children: React.ReactNode })
     return catalog.find(c => c.id === id);
   }, [catalog]);
 
+  /** Enforce canonical colors from TagColors for default tags */
+  const applyCanonicalColor = useCallback((tag: Tag): Tag => {
+    if (tag.isDefault && tag.id in TagColors) {
+      return { ...tag, color: TagColors[tag.id] };
+    }
+    return tag;
+  }, []);
+
   const getAllTags = useCallback(() => {
-    return [...defaultTags, ...state.customTags];
-  }, [defaultTags, state.customTags]);
+    return [...defaultTags, ...state.customTags].map(applyCanonicalColor);
+  }, [defaultTags, state.customTags, applyCanonicalColor]);
 
   const getTagById = useCallback((id: string) => {
-    return [...defaultTags, ...state.customTags].find(t => t.id === id);
-  }, [defaultTags, state.customTags]);
+    const tag = [...defaultTags, ...state.customTags].find(t => t.id === id);
+    return tag ? applyCanonicalColor(tag) : undefined;
+  }, [defaultTags, state.customTags, applyCanonicalColor]);
 
   const isCourseCompleted = useCallback((courseId: string) => {
     return state.semesters.some(
@@ -443,7 +454,7 @@ export function StudentPlanProvider({ children }: { children: React.ReactNode })
   // ─── Graduation Estimation ─────────────────────────────────────────────────
   const estimateGraduation = useCallback(() => {
     if (catalog.length === 0 || state.semesters.length === 0) {
-      return { year: 0, semester: 0, label: '—', delayed: false, onTrackLabel: '—' };
+      return { year: 0, semester: 0, label: '—', delayed: false, onTrackLabel: '—', remainingTime: '—' };
     }
 
     // 1. Build set of passed course IDs
@@ -459,7 +470,7 @@ export function StudentPlanProvider({ children }: { children: React.ReactNode })
     if (remaining.length === 0) {
       // Already done
       const lastSem = state.semesters[state.semesters.length - 1];
-      return { year: lastSem.year, semester: lastSem.term, label: 'Completed!', delayed: false, onTrackLabel: 'Graduated' };
+      return { year: lastSem.year, semester: lastSem.term, label: 'Completed!', delayed: false, onTrackLabel: 'Graduated', remainingTime: 'Completed' };
     }
 
     // 3. Find the longest prerequisite chain depth among remaining courses
@@ -546,7 +557,7 @@ export function StudentPlanProvider({ children }: { children: React.ReactNode })
 
     // 6. Convert to calendar year estimate
     //    Assuming Year 1 started in the current academic year minus (yearLevel - 1)
-    const currentCalendarYear = new Date().getFullYear();
+    const currentCalendarYear = getPHDate().getFullYear();
     const startYear = currentCalendarYear - (state.studentInfo.yearLevel - 1);
     const estimatedCalendarYear = startYear + gradYear;
     const termLabel = gradTerm === 1 ? '1st Sem' : '2nd Sem';
@@ -554,7 +565,20 @@ export function StudentPlanProvider({ children }: { children: React.ReactNode })
     const label = `~${termLabel} ${estimatedCalendarYear}`;
     const onTrackLabel = delayed ? 'Delayed' : 'On Track';
 
-    return { year: gradYear, semester: gradTerm, label, delayed, onTrackLabel };
+    // 7. Calculate remaining time
+    const remainingSems = Math.max(semsNeeded, 0);
+    if (remainingSems === 0) {
+      return { year: gradYear, semester: gradTerm, label, delayed, onTrackLabel, remainingTime: 'Completed' };
+    }
+    const remYears = Math.floor(remainingSems / 2);
+    const remSems = remainingSems % 2;
+    let remainingTime = '';
+    if (remYears > 0) remainingTime += `${remYears} year${remYears !== 1 ? 's' : ''}`;
+    if (remYears > 0 && remSems > 0) remainingTime += ', ';
+    if (remSems > 0) remainingTime += `${remSems} semester${remSems !== 1 ? 's' : ''}`;
+    if (!remainingTime) remainingTime = 'Less than a semester';
+
+    return { year: gradYear, semester: gradTerm, label, delayed, onTrackLabel, remainingTime };
   }, [catalog, state.semesters, state.studentInfo.yearLevel]);
 
   const value = useMemo(() => ({

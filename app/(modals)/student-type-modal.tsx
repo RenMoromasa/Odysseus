@@ -95,9 +95,9 @@ export default function StudentTypeModal() {
             style={({ pressed }) => [
               styles.optionCard,
               {
-                backgroundColor: colors.surfaceLight,
+                backgroundColor: colors.surface,
                 borderColor:
-                  selectedType === "regular" ? colors.accent : colors.border,
+                  selectedType === "regular" ? colors.accent : colors.glassBorder,
                 borderWidth: selectedType === "regular" ? 2 : 1,
                 opacity: pressed ? 0.8 : 1,
               },
@@ -154,9 +154,9 @@ export default function StudentTypeModal() {
             style={({ pressed }) => [
               styles.optionCard,
               {
-                backgroundColor: colors.surfaceLight,
+                backgroundColor: colors.surface,
                 borderColor:
-                  selectedType === "irregular" ? colors.accent : colors.border,
+                  selectedType === "irregular" ? colors.accent : colors.glassBorder,
                 borderWidth: selectedType === "irregular" ? 2 : 1,
                 opacity: pressed ? 0.8 : 1,
               },
@@ -240,15 +240,15 @@ export default function StudentTypeModal() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: Spacing.md,
+    paddingHorizontal: Spacing.lg,
   },
   header: {
     paddingVertical: Spacing.xl,
-    paddingTop: Spacing.xl,
+    paddingTop: Spacing.lg + Spacing.xl + Spacing.md,
   },
   title: {
-    fontSize: FontSizes.xl,
-    fontWeight: "700",
+    fontSize: FontSizes.xxl,
+    fontWeight: "800",
     marginBottom: Spacing.sm,
   },
   subtitle: {

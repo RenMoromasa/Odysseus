@@ -331,7 +331,7 @@ const styles = StyleSheet.create({
   },
 
   // ── Header ──
-  header: { alignItems: "center", marginBottom: Spacing.lg, paddingTop: Spacing.xl + Spacing.md },
+  header: { alignItems: "center", marginBottom: Spacing.lg, paddingTop: Spacing.lg + Spacing.xl + Spacing.md },
   iconBadge: {
     width: 64, height: 64, borderRadius: 32,
     alignItems: "center", justifyContent: "center",

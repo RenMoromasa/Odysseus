@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useStudentPlan } from '@/hooks/use-student-plan';
 import { AppColors, Spacing, FontSizes, Radii } from '@/constants/theme';
+import { getPHDate } from '@/utils/semester';
 import { GlassCard } from '@/components/ui/glass-card';
 import { ConflictAlert } from '@/components/ui/conflict-alert';
 import { CourseCard } from '@/components/ui/course-card';
@@ -363,14 +364,6 @@ export default function DashboardScreen() {
         <View style={{ height: 100 }} />
       </ScrollView>
 
-      {/* Floating Action Button */}
-      <Pressable
-        style={[styles.fab, { backgroundColor: colors.accent }]}
-        onPress={() => router.push('/(modals)/add-course-modal')}
-      >
-        <Ionicons name="add" size={28} color="#FFFFFF" />
-      </Pressable>
-
       {/* Scroll-fade overlay */}
       <ScrollFade color={colors.background} />
     </TabEnterAnimation>
@@ -378,7 +371,7 @@ export default function DashboardScreen() {
 }
 
 function getTimeOfDay(): string {
-  const h = new Date().getHours();
+  const h = getPHDate().getHours();
   if (h >= 5  && h < 12) return 'morning';
   if (h >= 12 && h < 18) return 'afternoon';
   if (h >= 18 && h < 22) return 'evening';
@@ -492,11 +485,4 @@ const styles = StyleSheet.create({
   completedInfo: { flex: 1 },
   completedLabel: { fontSize: FontSizes.md, fontWeight: '600' },
   completedMeta: { fontSize: FontSizes.xs, marginTop: 2 },
-  fab: {
-    position: 'absolute', bottom: 12, right: Spacing.md,
-    width: 56, height: 56, borderRadius: 28,
-    alignItems: 'center', justifyContent: 'center',
-    elevation: 8,
-    shadowOpacity: 0.3, shadowRadius: 8,
-  },
 });

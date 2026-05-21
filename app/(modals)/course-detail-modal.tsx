@@ -220,21 +220,23 @@ export default function CourseDetailModal() {
             course.prerequisites.map(prereqId => {
               const prereq = getCourse(prereqId);
               if (!prereq) return null;
-              const completed = isCourseCompleted(prereqId);
               const prereqGrade = getCourseGrade(prereqId);
+              // A prerequisite is 'passed' if it has any passing grade (1.00–3.00),
+              // regardless of whether the semester is marked completed
+              const passed = prereqGrade ? isPassingGrade(prereqGrade) : false;
               const prereqColor = getGradeColor(prereqGrade);
               return (
                 <View
                   key={prereqId}
                   style={[styles.prereqItem, {
-                    backgroundColor: completed ? colors.successSoft : colors.warningSoft,
-                    borderColor: completed ? colors.success + '30' : colors.warning + '30',
+                    backgroundColor: passed ? colors.successSoft : colors.warningSoft,
+                    borderColor: passed ? colors.success + '30' : colors.warning + '30',
                   }]}
                 >
                   <Ionicons
-                    name={completed ? 'checkmark-circle' : 'alert-circle'}
+                    name={passed ? 'checkmark-circle' : 'alert-circle'}
                     size={20}
-                    color={completed ? colors.success : colors.warning}
+                    color={passed ? colors.success : colors.warning}
                   />
                   <View style={styles.prereqInfo}>
                     <Text style={[styles.prereqCode, { color: colors.text }]}>
@@ -252,6 +254,7 @@ export default function CourseDetailModal() {
                 </View>
               );
             })
+
           )}
         </View>
 

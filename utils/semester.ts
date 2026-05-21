@@ -6,8 +6,16 @@ export interface CurrentSemesterInfo {
   year: number;
 }
 
-export function getCurrentSemester(): CurrentSemesterInfo {
+/** Get the current date/time in Philippine Standard Time (UTC+8) */
+export function getPHDate(): Date {
   const now = new Date();
+  // Convert to UTC then add 8 hours for PHT
+  const utc = now.getTime() + now.getTimezoneOffset() * 60000;
+  return new Date(utc + 8 * 3600000);
+}
+
+export function getCurrentSemester(): CurrentSemesterInfo {
+  const now = getPHDate();
   const month = now.getMonth() + 1; // 1-12
   const day = now.getDate();
   const year = now.getFullYear();

@@ -79,7 +79,7 @@ export const TagColors: Record<string, string> = {
   freeElective: '#D97706',
   minor: '#059669',
   profElective: '#92400E',
-  genEd: '#34D399',
+  genEd: '#D4A017',
   laboratory: '#B45309',
   thesis: '#F59E0B',
   peNstp: '#78716C',

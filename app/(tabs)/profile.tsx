@@ -23,7 +23,7 @@ export default function ProfileScreen() {
   const scheme = useColorScheme() ?? 'dark';
   const colors = AppColors[scheme];
   const router = useRouter();
-  const { state, calculateGPA } = useStudentPlan();
+  const { state, calculateGPA, estimateGraduation } = useStudentPlan();
   const { logout, profile } = useAuth();
   const [logoutAlert, setLogoutAlert] = useState(false);
 
@@ -41,6 +41,7 @@ export default function ProfileScreen() {
   const progressPercent = gpaData.totalCredits > 0
     ? Math.round((gpaData.completedCredits / gpaData.totalCredits) * 100)
     : 0;
+  const gradEstimate = estimateGraduation();
 
   const [themeMode, setThemeModeState] = useState(getThemeMode());
 
@@ -133,6 +134,53 @@ export default function ProfileScreen() {
                 color={colors.secondary} colors={colors}
               />
             </View>
+
+            {/* Estimated Graduation */}
+            {gradEstimate.label !== '—' && (
+              <View style={[styles.gradEstimateRow, { borderTopColor: colors.border }]}>
+                <View style={styles.gradEstimateLeft}>
+                  <Ionicons name="school-outline" size={16} color={colors.textSecondary} />
+                  <Text style={[styles.gradEstimateLabel, { color: colors.textSecondary }]}>
+                    Est. Graduation
+                  </Text>
+                </View>
+                <View style={styles.gradEstimateRight}>
+                  <Text style={[styles.gradEstimateValue, { color: colors.text }]}>
+                    {gradEstimate.label}
+                  </Text>
+                  <View style={[
+                    styles.gradEstimateBadge,
+                    { backgroundColor: gradEstimate.delayed ? colors.warningSoft : colors.accentSoft },
+                  ]}>
+                    <View style={[
+                      styles.gradEstimateDot,
+                      { backgroundColor: gradEstimate.delayed ? colors.warning : colors.accent },
+                    ]} />
+                    <Text style={[
+                      styles.gradEstimateBadgeText,
+                      { color: gradEstimate.delayed ? colors.warning : colors.accent },
+                    ]}>
+                      {gradEstimate.onTrackLabel}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            )}
+
+            {/* Estimated Time Remaining */}
+            {gradEstimate.remainingTime && gradEstimate.remainingTime !== '—' && (
+              <View style={[styles.gradEstimateRow, { borderTopColor: colors.border }]}>
+                <View style={styles.gradEstimateLeft}>
+                  <Ionicons name="time-outline" size={16} color={colors.textSecondary} />
+                  <Text style={[styles.gradEstimateLabel, { color: colors.textSecondary }]}>
+                    Time Remaining
+                  </Text>
+                </View>
+                <Text style={[styles.gradEstimateValue, { color: colors.text }]}>
+                  {gradEstimate.remainingTime}
+                </Text>
+              </View>
+            )}
           </GlassCard>
         </View>
 
@@ -308,6 +356,21 @@ const styles = StyleSheet.create({
   },
   progressFill: { height: '100%', borderRadius: 4 },
   summaryGrid: { flexDirection: 'row', gap: Spacing.sm },
+  gradEstimateRow: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    marginTop: Spacing.md, paddingTop: Spacing.md,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  gradEstimateLeft: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  gradEstimateLabel: { fontSize: FontSizes.xs, fontWeight: '500' },
+  gradEstimateRight: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
+  gradEstimateValue: { fontSize: FontSizes.sm, fontWeight: '700' },
+  gradEstimateBadge: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    paddingHorizontal: 8, paddingVertical: 2, borderRadius: Radii.full,
+  },
+  gradEstimateDot: { width: 6, height: 6, borderRadius: 3 },
+  gradEstimateBadgeText: { fontSize: 10, fontWeight: '700' },
   settingItem: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: Spacing.md, paddingVertical: Spacing.md,

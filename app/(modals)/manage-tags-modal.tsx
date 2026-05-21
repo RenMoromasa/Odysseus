@@ -160,7 +160,7 @@ export default function ManageTagsModal() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  scroll: { padding: Spacing.lg },
+  scroll: { padding: Spacing.lg, paddingTop: Spacing.lg + Spacing.xl + Spacing.md },
   headerRow: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     marginBottom: Spacing.xs,
